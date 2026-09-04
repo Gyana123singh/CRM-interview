@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import DashboardWrapper from "@/components/shared/DashboardWrapper";
-import { CheckCircle, ArrowRight, FileText, Sparkles } from "lucide-react";
+import { CheckCircle, ArrowRight, Sparkles } from "lucide-react";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -93,5 +93,13 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </DashboardWrapper>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-400 font-bold">Loading Payment Info...</div>}>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

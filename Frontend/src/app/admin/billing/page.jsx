@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import DashboardWrapper from "@/components/shared/DashboardWrapper";
 import { CreditCard, Check, Sparkles, AlertCircle, ShieldCheck, Download, Plus, RefreshCw } from "lucide-react";
 import { toast } from "react-toastify";
@@ -65,7 +65,7 @@ const getPlanUIDetails = (plan) => {
   return { badge, description, popular, features };
 };
 
-export default function BillingPage() {
+function BillingContent() {
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState("monthly");
@@ -540,5 +540,17 @@ export default function BillingPage() {
         )}
       </div>
     </DashboardWrapper>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={
+      <DashboardWrapper>
+        <div className="p-6 text-slate-400 font-bold">Loading Billing Workspace...</div>
+      </DashboardWrapper>
+    }>
+      <BillingContent />
+    </Suspense>
   );
 }
