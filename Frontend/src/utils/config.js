@@ -5,6 +5,7 @@
  * - Live: NEXT_PUBLIC_LIVE_API_URL, NEXT_PUBLIC_LIVE_BACKEND_URL, NEXT_PUBLIC_LIVE_SOCKET_URL
  */
 
+export const LIVE_FRONTEND_URL = process.env.NEXT_PUBLIC_LIVE_FRONTEND_URL || "https://crm.sjemsbamunigam.in";
 export const LIVE_BACKEND_URL = process.env.NEXT_PUBLIC_LIVE_BACKEND_URL || "https://api.sjemsbamunigam.in";
 export const LOCAL_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
