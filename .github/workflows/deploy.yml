@@ -1,0 +1,104 @@
+name: CI/CD Automated Deployment
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-and-verify:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            Backend/package-lock.json
+            Frontend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Install Frontend Dependencies
+        working-directory: Frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: Frontend
+        env:
+          NEXT_PUBLIC_API_URL: "https://api.sjemsbamunigam.in/api"
+          NEXT_PUBLIC_BACKEND_URL: "https://api.sjemsbamunigam.in"
+          NEXT_PUBLIC_SOCKET_URL: "https://api.sjemsbamunigam.in"
+        run: npm run build
+
+  deploy:
+    name: Deploy to Production VPS
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop: true
+
+          script: |
+            set -e
+
+            echo "🚀 Starting production deployment..."
+
+            cd /var/www/CRM-interview
+
+            echo "📦 Fetching latest code..."
+            git fetch origin
+
+            echo "🔄 Resetting to latest master..."
+            git reset --hard origin/master
+
+            echo "⚙️ Installing backend dependencies..."
+            cd /var/www/CRM-interview/Backend
+            npm ci
+
+            echo "🎨 Installing frontend dependencies..."
+            cd /var/www/CRM-interview/Frontend
+            npm ci
+
+            echo "🏗️ Building Next.js frontend..."
+            env \
+              NEXT_PUBLIC_API_URL="https://api.sjemsbamunigam.in/api" \
+              NEXT_PUBLIC_BACKEND_URL="https://api.sjemsbamunigam.in" \
+              NEXT_PUBLIC_SOCKET_URL="https://api.sjemsbamunigam.in" \
+              npm run build
+
+            echo "🔄 Restarting backend..."
+            pm2 restart crm-backend --update-env
+
+            echo "🔄 Restarting frontend..."
+            pm2 restart crm-frontend --update-env
+
+            echo "💾 Saving PM2 process list..."
+            pm2 save
+
+            echo "📊 PM2 status..."
+            pm2 status
+
+            echo "🔎 Checking backend..."
+            curl -f http://127.0.0.1:5018
+
+            echo "🔎 Checking frontend..."
+            curl -f http://127.0.0.1:3000
+
+            echo "✅ Deployment completed successfully!"
