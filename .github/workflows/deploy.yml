@@ -53,7 +53,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script_stop: true
 
           script: |
             set -e
@@ -95,10 +94,32 @@ jobs:
             echo "📊 PM2 status..."
             pm2 status
 
-            echo "🔎 Checking backend..."
-            curl -f http://127.0.0.1:5018
+            echo "⏳ Waiting for backend to start..."
+
+            for i in {1..10}; do
+              if curl -sf http://127.0.0.1:5018 > /dev/null; then
+                echo "✅ Backend is healthy!"
+                break
+              fi
+
+              if [ "$i" -eq 10 ]; then
+                echo "❌ Backend failed to start."
+                pm2 logs crm-backend --lines 50 --nostream || true
+                exit 1
+              fi
+
+              echo "Backend not ready yet... retrying ($i/10)"
+              sleep 3
+            done
 
             echo "🔎 Checking frontend..."
-            curl -f http://127.0.0.1:3000
+
+            if curl -sf http://127.0.0.1:3000 > /dev/null; then
+              echo "✅ Frontend is healthy!"
+            else
+              echo "❌ Frontend failed to start."
+              pm2 logs crm-frontend --lines 50 --nostream || true
+              exit 1
+            fi
 
             echo "✅ Deployment completed successfully!"
