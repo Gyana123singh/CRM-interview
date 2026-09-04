@@ -116,7 +116,6 @@ The `<DataTable />` component leverages `@tanstack/react-table` for high-perform
    - Stage update validations enforcing mandatory loss reasons on `LOST` status transitions.
 3. **Multi-Channel Inbox (`/team/conversations`)**:
    - Real-time conversation thread view supporting WhatsApp, Website Chat, and Email channels.
-   - Integrated AI Assistant for quick response generation.
 4. **Embeddable Ingestion Forms (`/embed/forms`)**:
    - Lightweight public form route that can be embedded into third-party sites via `<iframe>` for direct CRM lead capture.
 

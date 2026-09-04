@@ -1,4 +1,4 @@
-# ⚡ Multi-Tenant CRM Backend API Service
+# ⚡ CRM Sales Management Backend API Service
 
 [![Live API](https://img.shields.io/badge/Live_API-api.sjemsbamunigam.in-blueviolet?style=for-the-badge&logo=googlechrome)](https://api.sjemsbamunigam.in/api-docs)
 [![Express.js](https://img.shields.io/badge/Express.js-4.19-lightgrey?style=for-the-badge&logo=express)](https://expressjs.com/)
@@ -7,7 +7,7 @@
 [![Vitest](https://img.shields.io/badge/Vitest-1.6-yellow?style=for-the-badge&logo=vitest)](https://vitest.dev/)
 [![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3.0-brightgreen?style=for-the-badge&logo=swagger)](https://swagger.io/)
 
-Production-ready Express.js & MongoDB backend service powering the Multi-Tenant CRM, B2B Lead Intelligence, and WhatsApp Marketing Suite. Deployed on **Hostinger VPS** with Nginx reverse proxy and SSL encryption.
+Production-ready Express.js & MongoDB backend service powering the CRM Sales Management System and B2B Lead Intelligence Suite. Deployed on **Hostinger VPS** with Nginx reverse proxy and SSL encryption.
 
 ---
 
@@ -38,12 +38,12 @@ Backend/
 │   │   ├── whatsappController.js   # WhatsApp Marketing Campaigns & Webhooks
 │   │   └── conversationsController.js # Realtime Messaging & Thread Routing
 │   ├── middlewares/        # Express Middlewares
-│   │   ├── authMiddleware.js      # JWT Authentication & Multi-Tenant Scope
+│   │   ├── authMiddleware.js      # JWT Authentication & Scope Verification
 │   │   ├── validateRequest.js     # Zod Request Body/Params Schema Enforcement
 │   │   ├── errorHandler.js        # Centralized HTTP Error Handling
 │   │   └── rbacMiddleware.js      # Role-Based Access Control Guards
 │   ├── models/             # Mongoose Schemas & Database Collections
-│   │   ├── Company.js             # Tenant Workspace Isolation Boundary
+│   │   ├── Company.js             # Workspace Company Boundary
 │   │   ├── User.js                # System Accounts & Password Hashes
 │   │   ├── AgentProfile.js        # Sales Rep Statistics & Specialization
 │   │   ├── Lead.js                # Inbound Leads Pipeline Data
@@ -52,11 +52,9 @@ Backend/
 │   │   ├── Activity.js            # Lead/Deal Timeline Events
 │   │   ├── ChatThread.js          # Channel Conversation Threads
 │   │   ├── Message.js             # Individual Messages
-│   │   ├── AutomationRule.js      # Automated Trigger & Workflow Rules
 │   │   ├── Appointment.js         # Scheduled Appointments & Viewing Sessions
-│   │   ├── KnowledgeBase.js       # AI Chatbot Knowledge Context
-│   │   ├── Subscription.js        # Tenant Plan & Billing Records
-│   │   ├── Invoice.js             # Tenant Invoices & Payment Logs
+│   │   ├── Subscription.js        # Workspace Plan & Billing Records
+│   │   ├── Invoice.js             # Workspace Invoices & Payment Logs
 │   │   └── AuditLog.js            # System Compliance & Audit History
 │   ├── routes/             # Express API Routers
 │   ├── utils/              # Mappers, Helpers, Loggers & Enums
@@ -93,13 +91,7 @@ try {
 }
 ```
 
-### 2. Multi-Tenant Query Scoping
-Security middleware automatically attaches the authenticated user's `companyId` to `req.user`. Controllers append `companyId` to all database filters:
-```javascript
-const leads = await Lead.find({ companyId: req.user.companyId, ...filters });
-```
-
-### 3. Zod Request Schema Enforcement
+### 2. Zod Request Schema Enforcement
 Routes pass request payloads through the `validateRequest` middleware using Zod validation schemas to reject invalid inputs prior to controller execution:
 ```javascript
 export const validateRequest = (schema) => (req, res, next) => {
@@ -128,7 +120,7 @@ When running locally or inspecting the live VPS deployment:
 - `POST /api/leads/:id/convert` - Transactionally convert Lead to Customer & Deal
 - `GET /api/deals` - Fetch Deal Pipeline Opportunities
 - `PATCH /api/deals/:id/stage` - Update Deal Pipeline Stage
-- `GET /api/customers` - Fetch Tenant Customer Accounts
+- `GET /api/customers` - Fetch Customer Accounts
 - `GET /api/agents` - Fetch Active Sales Rep Profiles & Performance Indicators
 
 ---

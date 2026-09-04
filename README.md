@@ -1,4 +1,4 @@
-# 🚀 Enterprise AI-Powered Multi-Tenant CRM, B2B Lead Intelligence & Sales Automation Platform
+# 🚀 CRM Sales Management System
 
 [![Live App](https://img.shields.io/badge/Live_App-crm.sjemsbamunigam.in-blueviolet?style=for-the-badge&logo=googlechrome)](https://crm.sjemsbamunigam.in/)
 [![Hostinger VPS](https://img.shields.io/badge/Deployed_On-Hostinger_VPS-7232B3?style=for-the-badge&logo=hostinger)](https://crm.sjemsbamunigam.in/)
@@ -9,7 +9,7 @@
 [![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-RTK_Query-purple?style=for-the-badge&logo=redux)](https://redux-toolkit.js.org/)
 [![Docker Ready](https://img.shields.io/badge/Docker-Containers_Ready-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 
-A production-grade, enterprise multi-tenant CRM application designed for automated lead ingestion, multi-channel customer communications (WhatsApp, Email, Web Forms, Social Media, Phone), transactional lead conversions, weighted revenue forecasting, and AI sales assistance. Built with **Next.js 14 App Router**, **React 19**, **Redux Toolkit & RTK Query**, **Node.js/Express.js**, **MongoDB (Mongoose ODM)**, **Zod Validation**, **TanStack DataTables**, **Recharts**, **Swagger/OpenAPI**, **Vitest**, and **Docker**.
+A production-grade CRM sales application designed for automated lead ingestion, multi-channel customer communications (WhatsApp, Email, Web Forms, Social Media, Phone), transactional lead conversions, and weighted revenue forecasting. Built with **Next.js 14 App Router**, **React 19**, **Redux Toolkit & RTK Query**, **Node.js/Express.js**, **MongoDB (Mongoose ODM)**, **Zod Validation**, **TanStack DataTables**, **Recharts**, **Swagger/OpenAPI**, **Vitest**, and **Docker**.
 
 ---
 
@@ -70,7 +70,7 @@ graph TD
 
     subgraph API Gateway ["⚡ Express.js API (api.sjemsbamunigam.in)"]
         AuthMiddleware["JWT Authentication Guard"]
-        TenantGuard["Multi-Tenant Isolation (companyId)"]
+        ScopeGuard["Role & Authorization Guard"]
         ZodMiddleware["Zod Input Schema Validation"]
         Controllers["Domain Controllers (Leads, Deals, Auth, WhatsApp)"]
         Swagger["OpenAPI / Swagger UI (/api-docs)"]
@@ -87,8 +87,8 @@ graph TD
     Forms --> RTK
     RTK --> Redux
     RTK -- "REST APIs (JWT Bearer)" --> AuthMiddleware
-    AuthMiddleware --> TenantGuard
-    TenantGuard --> ZodMiddleware
+    AuthMiddleware --> ScopeGuard
+    ScopeGuard --> ZodMiddleware
     ZodMiddleware --> Controllers
     Controllers --> MongoDB
     Controllers --> RedisQueue
@@ -100,21 +100,12 @@ graph TD
 
 ## 🔑 Core Engineering & Business Logic Principles
 
-### 1. Transactional Lead Conversion (`Lead` → `Customer` → `Deal`)
-- **Atomic MongoDB Transaction**: Converts a qualified lead into an enterprise Customer record and creates an active Deal pipeline record in a single database transaction (`mongoose.startSession()`).
-- **Duplicate Conversion Safeguard**: Guarantees idempotent operations. Attempting to convert an already-converted lead yields an `HTTP 409 Conflict` response.
-- **Automated Lifecycle Audit**: Creates an `Activity` timeline event and appends an immutable entry to `AuditLog`.
-
-### 2. Deal Pipeline & Weighted Revenue Calculation
+### 1. Deal Pipeline & Weighted Revenue Calculation
 - **Pipeline Hierarchy**: `QUALIFICATION` ➔ `DISCOVERY` ➔ `PROPOSAL` ➔ `NEGOTIATION` ➔ `WON` / `LOST`.
 - **Expected Revenue Engine**: Automatically computes expected weighted value:
   $$\text{Expected Revenue} = \text{Deal Value} \times \left( \frac{\text{Probability}}{100} \right)$$
 - **Strict Loss Reason Enforcement**: Moving any deal stage to `LOST` strictly requires a documented `lossReason` (returns `HTTP 422 Unprocessable Entity` if omitted).
 - **Stage Closure Locks**: Transitions to terminal stages (`WON` / `LOST`) automatically lock timestamp metadata (`closedAt`).
-
-### 3. Multi-Tenant Data Isolation Guarantee
-- Tenant boundary identity (`companyId`) is strictly inferred from the verified JWT payload on the backend.
-- Prevents cross-tenant data leaks by auto-scoping all queries: `WHERE companyId = req.user.companyId`.
 
 ---
 
@@ -134,7 +125,6 @@ graph TD
 PORT=5000
 DATABASE_URL=mongodb://localhost:27017/crm_db
 JWT_SECRET=super-secret-jwt-key-change-this-in-production
-GEMINI_API_KEY=your_gemini_api_key
 
 # Admin Initial Seed Credentials
 ADMIN_NAME="Pradeep Patra"
@@ -170,7 +160,7 @@ NEXT_PUBLIC_LIVE_SOCKET_URL="https://api.sjemsbamunigam.in"
 # 1. Setup Backend
 cd Backend
 npm install
-npm run seed     # Populates DB with initial Tenant, Users, Leads, Deals & Agents
+npm run seed     # Populates DB with initial Users, Leads, Deals & Agents
 npm run dev      # Launches Backend Server on http://localhost:5000
 
 # 2. Setup Frontend (in a separate terminal)
@@ -203,7 +193,7 @@ For live platform evaluations (on [https://crm.sjemsbamunigam.in/](https://crm.s
 | Role | Email | Password | Access Scope & Responsibilities |
 | :--- | :--- | :--- | :--- |
 | **Client Admin** | `pradeep@infotattva.com` | `securepassword` | Workspace Admin: Full access to Dashboard, Leads CRM, Deals Kanban, Customers, Ingestion Generator, CSV Tools |
-| **Sales Rep (Team)** | `sales@infotattva.com` | `securepassword` | Team Member: Assigned Leads, Multi-channel Conversations, Follow-ups, Appointments |
+| **Sales Rep (Team)** | `sales@infotattva.com` | `securepassword` | Team Member: Assigned Leads, Follow-ups, Appointments |
 | **Sales Manager** | `manager@infotattva.com` | `securepassword` | Sales Manager: Team allocation, agent performance review, pipeline management |
 
 ---
@@ -228,9 +218,9 @@ npm run test
 
 ## 🎯 Recommended Interview Demo Walkthrough
 
-1. **Authentication & Multi-Tenant Login**:
+1. **Authentication & System Login**:
    - Access [https://crm.sjemsbamunigam.in/](https://crm.sjemsbamunigam.in/) (or `http://localhost:3000`) and log in as `pradeep@infotattva.com` (`securepassword`).
-   - Observe JWT token storage and tenant profile loading into Redux state.
+   - Observe JWT token storage and user profile loading into Redux state.
 2. **Dashboard & Data Visualization**:
    - View analytics graphs powered by Recharts (Monthly pipeline trends, lead channel breakdown, team performance stats).
 3. **Leads Management & TanStack DataTable**:
@@ -258,7 +248,7 @@ CRM-project-interview/
 │   ├── src/
 │   │   ├── config/             # DB Connection & Swagger Config
 │   │   ├── controllers/        # Lead, Deal, Auth, Customer, Agent Controllers
-│   │   ├── middlewares/        # Auth (JWT), Tenant Guard, Zod Validator, Error Handler
+│   │   ├── middlewares/        # Auth (JWT), Scope Guard, Zod Validator, Error Handler
 │   │   ├── models/             # Mongoose Schemas (User, Company, Lead, Customer, Deal, etc.)
 │   │   ├── routes/             # Express API Routers
 │   │   ├── utils/              # Mappers, Helpers & Seed Utilities
