@@ -372,17 +372,35 @@ router.get(
   authorizeRoles(["admin", "sales-manager", "sales-executive", "team"]),
   leadsController.exportLeadsCSV
 );
+router.post(
+  "/leads/import",
+  authenticateJWT,
+  authorizeRoles(["admin", "sales-manager", "sales-executive", "team"]),
+  leadsController.importLeadsCSV
+);
 router.get(
   "/customers/export",
   authenticateJWT,
   authorizeRoles(["admin", "sales-manager", "sales-executive", "team"]),
   customersController.exportCustomersCSV
 );
+router.post(
+  "/customers/import",
+  authenticateJWT,
+  authorizeRoles(["admin", "sales-manager", "sales-executive", "team"]),
+  customersController.importCustomersCSV
+);
 router.get(
   "/deals/export",
   authenticateJWT,
   authorizeRoles(["admin", "sales-manager", "sales-executive", "team"]),
   dealsController.exportDealsCSV
+);
+router.post(
+  "/deals/import",
+  authenticateJWT,
+  authorizeRoles(["admin", "sales-manager", "sales-executive", "team"]),
+  dealsController.importDealsCSV
 );
 
 // ==========================================

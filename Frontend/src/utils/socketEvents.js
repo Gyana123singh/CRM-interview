@@ -81,11 +81,14 @@ export function initRealtimeSocketListener(companyId, dispatch) {
       ["lead_created", "lead_updated", "lead_assigned", "lead_converted"].forEach((evt) => {
         socketInstance.on(evt, (data) => {
           if (dispatch) {
-            dispatch(leadsApi.util.invalidateTags(["Leads"]));
-            dispatch(customersApi.util.invalidateTags(["Customers"]));
-            dispatch(dealsApi.util.invalidateTags(["Deals"]));
+            dispatch(leadsApi.util.invalidateTags(["Lead", { type: "Lead", id: "LIST" }]));
+            dispatch(customersApi.util.invalidateTags(["Customer", { type: "Customer", id: "LIST" }]));
+            dispatch(dealsApi.util.invalidateTags(["Deal", { type: "Deal", id: "LIST" }]));
           }
           notifyRealtimeSubscribers(evt, data);
+          if (evt === "lead_created") {
+            toast.info(`🎉 New Lead Captured: ${data.name || "Inbound Visitor"} (${data.source || "Website"})`);
+          }
         });
       });
 
@@ -117,6 +120,14 @@ export function initRealtimeSocketListener(companyId, dispatch) {
         const data = JSON.parse(e.data);
         if (dispatch) dispatch(notificationsApi.util.invalidateTags(["Notifications"]));
         notifyRealtimeSubscribers("notification_created", data);
+      } catch (err) {}
+    });
+
+    eventSource.addEventListener("lead_created", (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (dispatch) dispatch(leadsApi.util.invalidateTags(["Lead", { type: "Lead", id: "LIST" }]));
+        notifyRealtimeSubscribers("lead_created", data);
       } catch (err) {}
     });
 

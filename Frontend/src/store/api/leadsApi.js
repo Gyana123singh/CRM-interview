@@ -130,6 +130,15 @@ export const leadsApi = apiSlice.injectEndpoints({
         "Dashboard",
         "Activity"
       ]
+    }),
+
+    importLeadsCSV: builder.mutation({
+      query: (body) => ({
+        url: "/leads/import",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: [{ type: "Lead", id: "LIST" }, "Dashboard"]
     })
   })
 });
@@ -144,5 +153,6 @@ export const {
   useUpdateLeadStatusMutation,
   useUpdateLeadNotesMutation,
   useAssignLeadMutation,
-  useConvertLeadMutation
+  useConvertLeadMutation,
+  useImportLeadsCSVMutation
 } = leadsApi;

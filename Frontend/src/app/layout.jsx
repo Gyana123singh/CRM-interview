@@ -3,7 +3,7 @@ import Providers from "@/components/shared/Providers";
 import "@/styles/globals.css";
 
 export const metadata = {
-  title: "Infotattva AI Automation CRM",
+  title: "CRM Sales Management System",
   description: "Enterprise AI-powered Lead Management, Customer Communication, & WhatsApp Workflow Automation.",
 };
 

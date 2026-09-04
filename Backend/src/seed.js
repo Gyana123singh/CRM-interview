@@ -65,7 +65,7 @@ async function seed() {
   // Company
   const company = await Company.create({
     _id: "company-infotattva-id",
-    companyName: "Infotattva Business Solutions",
+    companyName: "CRM Sales Management System",
     industry: "SaaS & Retail Solutions",
     contactPerson: "Pradeep Patra",
     phone: "+91 94380 99999",
@@ -76,7 +76,7 @@ async function seed() {
     credits: 1000,
     routingPolicy: "round-robin",
     whatsappPhone: "+91 94380 99999",
-    whatsappName: "Infotattva Business Live Desk",
+    whatsappName: "CRM Sales Management System Live Desk",
     whatsappConnected: true,
     smtpVerified: true,
     smtpHost: "smtp.infotattva.com",

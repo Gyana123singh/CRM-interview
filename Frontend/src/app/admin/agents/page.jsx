@@ -54,10 +54,35 @@ export default function AgentsManagementPage() {
     fetchAgents();
   }, []);
 
+  // Form errors state for validation
+  const [formErrors, setFormErrors] = useState({});
+
+  const validateAgentForm = () => {
+    const errors = {};
+    if (!name || !name.trim() || name.trim().length < 2) {
+      errors.name = "Full Name is required (min 2 chars)";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email.trim())) {
+      errors.email = "Valid email address is required";
+    }
+    if (!phone || !phone.trim() || phone.trim().length < 6) {
+      errors.phone = "Phone number is required (min 6 digits)";
+    }
+    if (!password || password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+    if (!role) {
+      errors.role = "Access role is required";
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreateAgent = async (e) => {
     e.preventDefault();
-    if (!name || !email || !phone) {
-      toast.error("Name, email, and phone number are required");
+    if (!validateAgentForm()) {
+      toast.error("Please fill in all required user credential fields correctly.");
       return;
     }
 
@@ -82,6 +107,7 @@ export default function AgentsManagementPage() {
       setSpecialty("");
       setFatherName("");
       setAddress("");
+      setFormErrors({});
       setShowAddModal(false);
       fetchAgents();
     } catch (err) {
@@ -241,14 +267,23 @@ export default function AgentsManagementPage() {
               <form onSubmit={handleCreateAgent} className="space-y-4 text-xs">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Full Name *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Full Name <span className="text-rose-400">*</span></span>
+                      {formErrors.name && <span className="text-[11px] font-medium text-rose-400">⚠️ {formErrors.name}</span>}
+                    </label>
                     <input
                       type="text"
-                      required
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
+                      }}
                       placeholder="e.g. Vikram Sen"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm text-slate-100 transition-all focus:outline-none ${
+                        formErrors.name
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     />
                   </div>
                   <div>
@@ -265,36 +300,61 @@ export default function AgentsManagementPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Email Address (Login ID) *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Email Address (Login ID) <span className="text-rose-400">*</span></span>
+                      {formErrors.email && <span className="text-[11px] font-medium text-rose-400">⚠️ {formErrors.email}</span>}
+                    </label>
                     <input
                       type="email"
-                      required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: undefined }));
+                      }}
                       placeholder="vikram@infotattva.com"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm text-slate-100 transition-all focus:outline-none ${
+                        formErrors.email
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Phone Number *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Phone Number <span className="text-rose-400">*</span></span>
+                      {formErrors.phone && <span className="text-[11px] font-medium text-rose-400">⚠️ {formErrors.phone}</span>}
+                    </label>
                     <input
                       type="text"
-                      required
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: undefined }));
+                      }}
                       placeholder="+91 94380 88888"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm text-slate-100 transition-all focus:outline-none ${
+                        formErrors.phone
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Access Role *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Access Role <span className="text-rose-400">*</span></span>
+                      {formErrors.role && <span className="text-[11px] font-medium text-rose-400">⚠️ {formErrors.role}</span>}
+                    </label>
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm text-slate-100 font-bold transition-all focus:outline-none ${
+                        formErrors.role
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     >
                       <option value="sales-manager">👔 Sales Manager</option>
                       <option value="sales-executive">💼 Sales Executive</option>
@@ -302,14 +362,23 @@ export default function AgentsManagementPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Initial Password *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Initial Password <span className="text-rose-400">*</span></span>
+                      {formErrors.password && <span className="text-[11px] font-medium text-rose-400">⚠️ {formErrors.password}</span>}
+                    </label>
                     <input
                       type="text"
-                      required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (formErrors.password) setFormErrors((prev) => ({ ...prev, password: undefined }));
+                      }}
                       placeholder="securepassword"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm text-slate-100 font-mono transition-all focus:outline-none ${
+                        formErrors.password
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     />
                   </div>
                 </div>

@@ -54,6 +54,15 @@ export const customersApi = apiSlice.injectEndpoints({
         method: "DELETE"
       }),
       invalidatesTags: [{ type: "Customer", id: "LIST" }]
+    }),
+
+    importCustomersCSV: builder.mutation({
+      query: (body) => ({
+        url: "/customers/import",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: [{ type: "Customer", id: "LIST" }, "Dashboard"]
     })
   })
 });
@@ -63,5 +72,6 @@ export const {
   useGetCustomerByIdQuery,
   useCreateCustomerMutation,
   useUpdateCustomerMutation,
-  useDeleteCustomerMutation
+  useDeleteCustomerMutation,
+  useImportCustomersCSVMutation
 } = customersApi;

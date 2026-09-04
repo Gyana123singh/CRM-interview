@@ -1,12 +1,12 @@
 (function() {
   function initWidget() {
-    var container = document.getElementById('infotattva-lead-widget');
+    var container = document.getElementById('crm-lead-widget') || document.getElementById('infotattva-lead-widget');
     if (!container) return;
 
     // Prevent duplicate rendering
     if (container.querySelector('iframe')) return;
 
-    var companyId = container.getAttribute('data-company') || 'company-infotattva-id';
+    var companyId = container.getAttribute('data-company') || 'company-main';
     var theme = container.getAttribute('data-theme') || 'light';
     var accent = container.getAttribute('data-accent') || '#6366f1';
     var title = container.getAttribute('data-title') || '';

@@ -20,6 +20,8 @@ import {
   FolderOpen
 } from "lucide-react";
 
+import { toast } from "react-toastify";
+
 export default function TicketsPage() {
   const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch();
@@ -40,6 +42,7 @@ export default function TicketsPage() {
   const [newDescription, setNewDescription] = useState("");
   const [newCategory, setNewCategory] = useState("Technical Bug");
   const [newPriority, setNewPriority] = useState("Medium");
+  const [ticketErrors, setTicketErrors] = useState({});
 
   // Search & Filters State
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,9 +85,29 @@ export default function TicketsPage() {
   const inProgressCount = filteredTickets.filter((t) => t.status === "In Progress").length;
   const resolvedCount = filteredTickets.filter((t) => t.status === "Resolved" || t.status === "Closed").length;
 
+  const validateTicketForm = () => {
+    const errors = {};
+    if (!newTitle || !newTitle.trim() || newTitle.trim().length < 5) {
+      errors.title = "Ticket subject must be at least 5 characters";
+    }
+    if (!newDescription || !newDescription.trim() || newDescription.trim().length < 10) {
+      errors.description = "Detailed description must be at least 10 characters";
+    }
+    setTicketErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreateTicket = (e) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newDescription.trim() || !user) return;
+    if (!validateTicketForm()) {
+      toast.error("Please fill in all ticket details correctly.");
+      return;
+    }
+
+    if (!user) {
+      toast.error("User session missing. Please log in again.");
+      return;
+    }
 
     dispatch(
       addTicket({
@@ -95,15 +118,18 @@ export default function TicketsPage() {
         createdBy: user.name,
         creatorRole: activeRole,
         companyId: user.companyId || "company_platform",
-        companyName: user.companyName || "Infotattva CRM Platform",
+        companyName: user.companyName || "CRM Sales Management System",
       })
     );
+
+    toast.success(`Platform ticket "${newTitle.trim()}" filed successfully!`);
 
     // Reset Form
     setNewTitle("");
     setNewDescription("");
     setNewCategory("Technical Bug");
     setNewPriority("Medium");
+    setTicketErrors({});
     setShowCreateModal(false);
   };
 
@@ -414,14 +440,25 @@ export default function TicketsPage() {
 
                 {/* Title */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ticket Subject</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ticket Subject *</label>
+                    {ticketErrors.title && (
+                      <span className="text-[11px] font-medium text-rose-400">⚠️ {ticketErrors.title}</span>
+                    )}
+                  </div>
                   <input
                     type="text"
-                    required
                     placeholder="Short description of the technical or billing problem..."
                     value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-955 dark:text-slate-50 focus:ring-2 focus:ring-primary/20 outline-none"
+                    onChange={(e) => {
+                      setNewTitle(e.target.value);
+                      if (ticketErrors.title) setTicketErrors((prev) => ({ ...prev, title: undefined }));
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 outline-none transition-all ${
+                      ticketErrors.title
+                        ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                        : "border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                    }`}
                   />
                 </div>
 
@@ -432,7 +469,7 @@ export default function TicketsPage() {
                     <select
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-905 focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/50 outline-none"
                     >
                       <option value="Technical Bug">Technical Bug</option>
                       <option value="Billing">Billing Inquiry</option>
@@ -447,7 +484,7 @@ export default function TicketsPage() {
                     <select
                       value={newPriority}
                       onChange={(e) => setNewPriority(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-905 focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/50 outline-none"
                     >
                       <option value="Low">Low</option>
                       <option value="Medium">Medium</option>
@@ -459,14 +496,25 @@ export default function TicketsPage() {
 
                 {/* Description */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Detailed Description</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Detailed Description *</label>
+                    {ticketErrors.description && (
+                      <span className="text-[11px] font-medium text-rose-400">⚠️ {ticketErrors.description}</span>
+                    )}
+                  </div>
                   <textarea
                     rows={4}
-                    required
                     placeholder="Provide details of the bug, transaction issue, or custom request. Include error codes or web logs if possible..."
                     value={newDescription}
-                    onChange={(e) => setNewDescription(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-955 focus:ring-2 focus:ring-primary/20 outline-none"
+                    onChange={(e) => {
+                      setNewDescription(e.target.value);
+                      if (ticketErrors.description) setTicketErrors((prev) => ({ ...prev, description: undefined }));
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 outline-none transition-all ${
+                      ticketErrors.description
+                        ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                        : "border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500/50"
+                    }`}
                   />
                 </div>
 

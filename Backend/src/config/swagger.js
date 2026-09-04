@@ -10,7 +10,7 @@ const options = {
       description:
         "Production-grade RESTful API documentation for Multi-Tenant CRM, Lead Ingestion & Conversion, Deal Pipeline Management, Customer Accounts, AI Knowledge Base, and WhatsApp Cloud Marketing.",
       contact: {
-        name: "Infotattva Engineering",
+        name: "CRM Sales Management System Engineering",
         email: "support@infotattva.com"
       }
     },

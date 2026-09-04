@@ -4,9 +4,10 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { logout, toggleMobileSidebar } from "@/store/slices/authSlice";
+import { logout, toggleMobileSidebar, setActiveRole } from "@/store/slices/authSlice";
 import { useGetNotificationsQuery, useMarkNotificationAsReadMutation, useMarkAllNotificationsAsReadMutation } from "@/store/api/notificationsApi";
 import { Menu, Moon, Sun, Bell, Search, ShieldAlert, MonitorPlay, Check, X, CheckCheck } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function Header() {
   const dispatch = useDispatch();
@@ -29,8 +30,8 @@ export default function Header() {
   }, []);
 
   const handleRoleChange = (role) => {
-    dispatch(logout());
-    router.push("/auth/login");
+    dispatch(setActiveRole(role));
+    toast.info(`Switched sandbox role view to [${role.replace("-", " ").toUpperCase()}]`);
   };
 
   return (
@@ -58,30 +59,32 @@ export default function Header() {
 
       {/* Right Controls */}
       <div className="flex items-center gap-6">
-        {/* Dynamic Role Quick-Switcher Sandbox Panel */}
-        <div className="hidden md:flex items-center gap-1.5 p-1 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 px-2 flex items-center gap-1">
-            <MonitorPlay className="h-3 w-3 text-primary" /> Role:
-          </span>
-          {[
-            { key: "admin", label: "Admin" },
-            { key: "sales-manager", label: "Sales Mgr" },
-            { key: "sales-executive", label: "Sales Exec" }
-          ].map((r) => (
-            <button
-              key={r.key}
-              onClick={() => handleRoleChange(r.key)}
-              suppressHydrationWarning
-              className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition ${
-                activeRole === r.key
-                  ? "bg-gradient-to-r from-primary to-gray-500 text-white shadow-md shadow-purple-600/10"
-                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+        {/* Dynamic Role Quick-Switcher Sandbox Panel (Admin Only) */}
+        {(user?.role === "admin" || user?.role === "client-admin" || user?.role === "super-admin") && (
+          <div className="hidden md:flex items-center gap-1.5 p-1 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+            <span className="text-[10px] uppercase font-bold text-slate-400 px-2 flex items-center gap-1">
+              <MonitorPlay className="h-3 w-3 text-primary" /> Role:
+            </span>
+            {[
+              { key: "admin", label: "Admin" },
+              { key: "sales-manager", label: "Sales Mgr" },
+              { key: "sales-executive", label: "Sales Exec" }
+            ].map((r) => (
+              <button
+                key={r.key}
+                onClick={() => handleRoleChange(r.key)}
+                suppressHydrationWarning
+                className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition ${
+                  activeRole === r.key
+                    ? "bg-gradient-to-r from-primary to-gray-500 text-white shadow-md shadow-purple-600/10"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Theme Toggle */}
         <button
@@ -155,10 +158,10 @@ export default function Header() {
         {/* Company Title */}
         <div className="flex flex-col text-right">
           <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-            {user?.companyName || "Infotattva Portal"}
+            {(!user?.companyName || user?.companyName === "Infotattva Business Solutions" || user?.companyName === "Infotattva Portal") ? "CRM Sales Management System" : user.companyName}
           </span>
           <span className="text-[10px] text-slate-400 capitalize font-medium">
-            {activeRole === "client-admin" || activeRole === "admin" || activeRole === "super-admin" ? "Client Admin" : activeRole}
+            {activeRole === "client-admin" || activeRole === "admin" || activeRole === "super-admin" ? "Admin" : activeRole}
           </span>
         </div>
       </div>

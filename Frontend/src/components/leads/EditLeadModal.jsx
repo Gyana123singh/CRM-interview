@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Save, UserCheck, ShieldAlert, Sparkles, Phone, Mail, MapPin, Briefcase, FileText } from "lucide-react";
 import { useUpdateLeadMutation, useGetAgentsQuery } from "@/store/api/leadsApi";
 import { toast } from "react-toastify";
@@ -8,6 +9,11 @@ import { toast } from "react-toastify";
 export function EditLeadModal({ lead, isOpen, onClose, onSuccess }) {
   const { data: agentsData } = useGetAgentsQuery(undefined, { skip: !isOpen });
   const [updateLead, { isLoading }] = useUpdateLeadMutation();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const agents = Array.isArray(agentsData) ? agentsData : [];
 
@@ -37,7 +43,7 @@ export function EditLeadModal({ lead, isOpen, onClose, onSuccess }) {
     }
   }, [lead]);
 
-  if (!isOpen || !lead) return null;
+  if (!isOpen || !lead || !mounted) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,7 +54,7 @@ export function EditLeadModal({ lead, isOpen, onClose, onSuccess }) {
 
     try {
       await updateLead({
-        id: lead.id,
+        id: lead.id || lead._id,
         name,
         phone,
         email,
@@ -69,8 +75,8 @@ export function EditLeadModal({ lead, isOpen, onClose, onSuccess }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
       <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -251,6 +257,7 @@ export function EditLeadModal({ lead, isOpen, onClose, onSuccess }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

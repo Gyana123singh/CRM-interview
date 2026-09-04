@@ -61,9 +61,10 @@ export function mapLeadStatus(statusStr) {
 // ==========================================
 
 export function mapLeadSourceToFrontend(source) {
-  if (!source) return "Manual Entry";
+  if (!source) return "Website Forms";
   const s = String(source).toUpperCase();
   switch (s) {
+    case "WEBSITE":
     case "WEBSITE_FORMS":
     case "WEBSITE FORMS":
       return "Website Forms";
@@ -78,6 +79,15 @@ export function mapLeadSourceToFrontend(source) {
       return "Google Ads";
     case "WHATSAPP":
       return "WhatsApp";
+    case "REFERRAL":
+      return "Referral";
+    case "SOCIAL_MEDIA":
+    case "SOCIAL MEDIA":
+      return "Social Media";
+    case "EMAIL":
+      return "Email";
+    case "PHONE":
+      return "Phone";
     case "MANUAL_ENTRY":
     case "MANUAL ENTRY":
       return "Manual Entry";
@@ -87,24 +97,34 @@ export function mapLeadSourceToFrontend(source) {
 }
 
 export function mapLeadSource(sourceStr) {
-  if (!sourceStr) return "Manual Entry";
-  switch (sourceStr) {
-    case "Website Forms":
+  if (!sourceStr) return "Website Forms";
+  const s = String(sourceStr).toUpperCase();
+  switch (s) {
+    case "WEBSITE":
+    case "WEBSITE FORMS":
     case "WEBSITE_FORMS":
       return "Website Forms";
-    case "Landing Pages":
+    case "LANDING PAGES":
     case "LANDING_PAGES":
       return "Landing Pages";
-    case "Meta Ads":
+    case "META ADS":
     case "META_ADS":
       return "Meta Ads";
-    case "Google Ads":
+    case "GOOGLE ADS":
     case "GOOGLE_ADS":
       return "Google Ads";
-    case "WhatsApp":
     case "WHATSAPP":
       return "WhatsApp";
-    case "Manual Entry":
+    case "REFERRAL":
+      return "Referral";
+    case "SOCIAL MEDIA":
+    case "SOCIAL_MEDIA":
+      return "Social Media";
+    case "EMAIL":
+      return "Email";
+    case "PHONE":
+      return "Phone";
+    case "MANUAL ENTRY":
     case "MANUAL_ENTRY":
       return "Manual Entry";
     default:

@@ -15,8 +15,11 @@ import {
   Loader2,
   Calendar,
   X,
-  Calculator
+  Calculator,
+  Upload
 } from "lucide-react";
+import { downloadCSV } from "@/utils/exportCsv";
+import CSVImportModal from "@/components/shared/CSVImportModal";
 import {
   useGetDealsQuery,
   useUpdateDealStageMutation,
@@ -36,12 +39,29 @@ const STAGES = [
 ];
 
 const createDealSchema = z.object({
-  title: z.string().min(2, "Title is required"),
-  dealValue: z.number().min(0, "Value must be >= 0"),
-  probability: z.number().min(0).max(100, "Probability must be 0-100"),
-  stage: z.enum(["QUALIFICATION", "DISCOVERY", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]),
+  title: z
+    .string()
+    .min(1, "Deal Title is required")
+    .min(2, "Deal Title must be at least 2 characters")
+    .max(120, "Title cannot exceed 120 characters"),
+  dealValue: z
+    .preprocess(
+      (val) => (val === "" || val === null || val === undefined || isNaN(Number(val)) ? undefined : Number(val)),
+      z.number({ invalid_type_error: "Deal Value must be a valid number" })
+        .min(0, "Deal Value must be $0 or greater")
+    ),
+  probability: z
+    .preprocess(
+      (val) => (val === "" || val === null || val === undefined || isNaN(Number(val)) ? undefined : Number(val)),
+      z.number({ invalid_type_error: "Probability must be a valid number" })
+        .min(0, "Probability must be between 0% and 100%")
+        .max(100, "Probability must be between 0% and 100%")
+    ),
+  stage: z.enum(["QUALIFICATION", "DISCOVERY", "PROPOSAL", "NEGOTIATION", "WON", "LOST"], {
+    errorMap: () => ({ message: "Please select a valid stage" })
+  }),
   expectedClosingDate: z.string().optional(),
-  notes: z.string().optional()
+  notes: z.string().max(500, "Notes cannot exceed 500 characters").optional()
 });
 
 export default function ClientAdminDealsPage() {
@@ -50,6 +70,7 @@ export default function ClientAdminDealsPage() {
   const [stageModalDeal, setStageModalDeal] = useState(null);
   const [targetStage, setTargetStage] = useState("QUALIFICATION");
   const [lossReason, setLossReason] = useState("");
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -157,15 +178,22 @@ export default function ClientAdminDealsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/deals/export`}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 h-10 px-3.5 border border-indigo-500/30 bg-indigo-500/10 rounded-xl text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 transition whitespace-nowrap shrink-0"
+            >
+              <Upload className="h-4 w-4 shrink-0 text-indigo-400" />
+              <span className="whitespace-nowrap">Import CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCSV("/deals/export", "deals_export.csv")}
               className="inline-flex items-center justify-center gap-1.5 h-10 px-3.5 border border-slate-800 bg-slate-900/80 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition whitespace-nowrap shrink-0"
             >
               <Download className="h-4 w-4 shrink-0 text-slate-400" />
               <span className="whitespace-nowrap">Export CSV</span>
-            </a>
+            </button>
             <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center justify-center gap-1.5 h-10 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all whitespace-nowrap shrink-0"
@@ -385,31 +413,68 @@ export default function ClientAdminDealsPage() {
 
               <form onSubmit={handleSubmit(handleCreateSubmit)} className="mt-4 space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 mb-1 font-medium">Deal Title *</label>
+                  <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                    <span>Deal Title <span className="text-rose-400">*</span></span>
+                    {errors.title && (
+                      <span className="text-[11px] font-medium text-rose-400">
+                        ⚠️ {errors.title.message}
+                      </span>
+                    )}
+                  </label>
                   <input
                     type="text"
                     {...register("title")}
                     placeholder="e.g. Enterprise Cloud License Contract"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200"
+                    className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm transition-all focus:outline-none ${
+                      errors.title
+                        ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                        : "border-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500/50"
+                    }`}
                   />
-                  {errors.title && <p className="mt-1 text-rose-400">{errors.title.message}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Deal Value ($) *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Deal Value ($) <span className="text-rose-400">*</span></span>
+                      {errors.dealValue && (
+                        <span className="text-[11px] font-medium text-rose-400">
+                          ⚠️ {errors.dealValue.message}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="number"
+                      step="any"
                       {...register("dealValue", { valueAsNumber: true })}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200"
+                      placeholder="25000"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm transition-all focus:outline-none ${
+                        errors.dealValue
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Probability (%) *</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Probability (%) <span className="text-rose-400">*</span></span>
+                      {errors.probability && (
+                        <span className="text-[11px] font-medium text-rose-400">
+                          ⚠️ {errors.probability.message}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="number"
+                      min="0"
+                      max="100"
                       {...register("probability", { valueAsNumber: true })}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200"
+                      placeholder="20"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm transition-all focus:outline-none ${
+                        errors.probability
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     />
                   </div>
                 </div>
@@ -421,10 +486,21 @@ export default function ClientAdminDealsPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Pipeline Stage</label>
+                    <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                      <span>Pipeline Stage</span>
+                      {errors.stage && (
+                        <span className="text-[11px] font-medium text-rose-400">
+                          ⚠️ {errors.stage.message}
+                        </span>
+                      )}
+                    </label>
                     <select
                       {...register("stage")}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm transition-all focus:outline-none ${
+                        errors.stage
+                          ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                          : "border-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500/50"
+                      }`}
                     >
                       <option value="QUALIFICATION">Qualification (20%)</option>
                       <option value="DISCOVERY">Discovery (40%)</option>
@@ -434,22 +510,33 @@ export default function ClientAdminDealsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Expected Closing Date</label>
+                    <label className="block text-slate-300 mb-1 font-semibold">Expected Closing Date</label>
                     <input
                       type="date"
                       {...register("expectedClosingDate")}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 mb-1 font-medium">Notes</label>
+                  <label className="block text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                    <span>Notes</span>
+                    {errors.notes && (
+                      <span className="text-[11px] font-medium text-rose-400">
+                        ⚠️ {errors.notes.message}
+                      </span>
+                    )}
+                  </label>
                   <textarea
                     rows={2}
                     {...register("notes")}
                     placeholder="Add opportunity details..."
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200"
+                    className={`w-full px-3 py-2 bg-slate-950 border rounded-lg text-sm transition-all focus:outline-none ${
+                      errors.notes
+                        ? "border-rose-500/60 text-rose-200 focus:ring-2 focus:ring-rose-500/30 bg-rose-950/10"
+                        : "border-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500/50"
+                    }`}
                   />
                 </div>
 
@@ -473,6 +560,13 @@ export default function ClientAdminDealsPage() {
             </div>
           </div>
         )}
+        {/* CSV Import Modal */}
+        <CSVImportModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          entityType="Deal"
+          onSuccess={() => refetch()}
+        />
       </div>
     </DashboardWrapper>
   );

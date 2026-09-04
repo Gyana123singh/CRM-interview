@@ -296,7 +296,7 @@ export default function AddCompanyModal({
                   <Building className="h-4 w-4" />
                   <span className="font-extrabold uppercase text-[9px] tracking-wider">Representative Contact</span>
                 </div>
-                <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">{company?.contactPerson || "Client Admin"}</p>
+                <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">{company?.contactPerson || "Admin"}</p>
               </div>
 
               {/* Address */}

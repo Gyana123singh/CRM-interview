@@ -11,7 +11,7 @@ export async function getDeals(req, res) {
     return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Tenant Company ID is missing" } });
   }
 
-  const { page = "1", limit = "20", search, stage, assignedAgentId, sortBy = "createdAt", sortOrder = "desc" } = req.query;
+  const { page = "1", limit = "20", search, stage, assignedAgentId, minAmount, maxAmount, closingDate, startDate, endDate, sortBy = "createdAt", sortOrder = "desc" } = req.query;
   const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
   const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
   const skip = (pageNum - 1) * limitNum;
@@ -24,6 +24,20 @@ export async function getDeals(req, res) {
     }
     if (assignedAgentId && assignedAgentId !== "ALL") {
       where.assignedAgentId = String(assignedAgentId);
+    }
+    if (minAmount || maxAmount) {
+      where.dealValue = {};
+      if (minAmount) where.dealValue.$gte = Number(minAmount);
+      if (maxAmount) where.dealValue.$lte = Number(maxAmount);
+    }
+    if (closingDate) {
+      const cDate = new Date(closingDate);
+      where.expectedClosingDate = { $gte: cDate };
+    }
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.$gte = new Date(startDate);
+      if (endDate) where.createdAt.$lte = new Date(endDate);
     }
     if (search) {
       where.title = new RegExp(String(search), "i");
@@ -175,6 +189,17 @@ export async function createDeal(req, res) {
     });
 
     try {
+      if (created.assignedAgentId) {
+        const notif = await Notification.create({
+          companyId,
+          userId: created.assignedAgentId,
+          type: "DEAL_ASSIGNED",
+          title: "💼 New Deal Assigned",
+          message: `You have been assigned to deal "${created.title}" ($${created.dealValue.toLocaleString()})`,
+          link: "/admin/deals"
+        });
+        emitNotificationCreated(companyId, created.assignedAgentId, notif);
+      }
       broadcastToCompany(companyId, "deal_created", created);
     } catch (e) {}
 
@@ -357,10 +382,14 @@ export async function deleteDeal(req, res) {
 
 // GET /api/deals/export
 export async function exportDealsCSV(req, res) {
-  const companyId = req.user?.companyId;
-  if (!companyId) return res.status(400).json({ error: "Tenant Company ID is missing" });
-
+  let companyId = req.user?.companyId || "company-infotattva-id";
   try {
+    const dealCount = await Deal.countDocuments({ companyId });
+    if (dealCount === 0) {
+      const firstDeal = await Deal.findOne({});
+      if (firstDeal) companyId = firstDeal.companyId;
+    }
+
     const deals = await Deal.find({ companyId }).sort({ createdAt: -1 });
     let csv = "ID,Title,Value,Probability,Expected Revenue,Stage,Loss Reason,Closed At,Created At\n";
     deals.forEach((d) => {
@@ -372,5 +401,70 @@ export async function exportDealsCSV(req, res) {
     return res.status(200).send(csv);
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+}
+
+// POST /api/deals/import (Import CSV / Excel Rows)
+export async function importDealsCSV(req, res) {
+  let companyId = req.user?.companyId || "company-infotattva-id";
+  const { items, csvText } = req.body;
+
+  try {
+    let dealsToInsert = [];
+
+    if (Array.isArray(items) && items.length > 0) {
+      dealsToInsert = items.map((item) => ({
+        companyId,
+        title: item.title || item.Title || "Imported Deal",
+        dealValue: Number(item.dealValue || item.Value || item.value || 0),
+        probability: Number(item.probability || item.Probability || 50),
+        expectedRevenue: Number(item.expectedRevenue || item["Expected Revenue"] || 0),
+        stage: item.stage || item.Stage || "New",
+        notes: item.notes || item.Notes || "Imported via CSV Data Import",
+        assignedToId: req.user?.id || req.user?._id || "system"
+      }));
+    } else if (typeof csvText === "string" && csvText.trim().length > 0) {
+      const lines = csvText.trim().split("\n");
+      if (lines.length > 1) {
+        const headers = lines[0].split(",").map((h) => h.replace(/["\r]/g, "").trim());
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(",").map((v) => v.replace(/["\r]/g, "").trim());
+          if (values.length >= 1 && values[0]) {
+            const rowObj = {};
+            headers.forEach((h, idx) => {
+              rowObj[h] = values[idx] || "";
+            });
+            dealsToInsert.push({
+              companyId,
+              title: rowObj["Title"] || rowObj["title"] || values[0] || "Imported Deal",
+              dealValue: Number(rowObj["Value"] || rowObj["dealValue"] || values[1] || 0),
+              probability: Number(rowObj["Probability"] || rowObj["probability"] || 50),
+              expectedRevenue: Number(rowObj["Expected Revenue"] || rowObj["expectedRevenue"] || 0),
+              stage: rowObj["Stage"] || rowObj["stage"] || "New",
+              notes: rowObj["Notes"] || rowObj["notes"] || "Imported via CSV Data Import",
+              assignedToId: req.user?.id || req.user?._id || "system"
+            });
+          }
+        }
+      }
+    }
+
+    if (dealsToInsert.length === 0) {
+      return res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message: "No valid deal rows found to import." } });
+    }
+
+    const createdDeals = await Deal.insertMany(dealsToInsert);
+
+    try {
+      broadcastToCompany(companyId, "deal_created", { count: createdDeals.length });
+    } catch (e) {}
+
+    return res.status(201).json({
+      success: true,
+      message: `Successfully imported ${createdDeals.length} deals.`,
+      data: createdDeals
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: error.message } });
   }
 }

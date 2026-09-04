@@ -71,24 +71,6 @@ const navLinks = [
     roles: ["admin", "sales-manager"],
   },
   {
-    label: "Live Chat",
-    href: "/team/conversations",
-    icon: MessageSquare,
-    roles: ["admin", "sales-manager", "sales-executive", "team"],
-  },
-  {
-    label: "Calendar Bookings",
-    href: "/admin/appointments",
-    icon: Calendar,
-    roles: ["admin", "sales-manager", "sales-executive", "team"],
-  },
-  {
-    label: "Credits & Billing",
-    href: "/admin/billing",
-    icon: CreditCard,
-    roles: ["admin"],
-  },
-  {
     label: "Reports",
     href: "/admin/reports",
     icon: BarChart3,
@@ -179,7 +161,7 @@ export default function Sidebar() {
             <div className="flex flex-col min-w-0">
               <span className="text-[9px] text-slate-400 dark:text-slate-400 uppercase font-extrabold tracking-wider">Active Role</span>
               <span className="text-xs font-black text-slate-800 dark:text-slate-200 capitalize truncate">
-                {currentRole === "admin" || currentRole === "client-admin" ? "Client Admin" : currentRole.replace("-", " ")}
+                {currentRole === "admin" || currentRole === "client-admin" ? "Admin" : currentRole.replace("-", " ")}
               </span>
             </div>
           </div>

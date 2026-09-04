@@ -13,10 +13,14 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      state.user = action.payload;
-      state.isAuthenticated = !!action.payload;
-      if (action.payload?.role) {
-        const rawRole = action.payload.role;
+      let userData = action.payload;
+      if (userData && (userData.companyName === "Infotattva Business Solutions" || userData.companyName === "Infotattva Portal" || !userData.companyName)) {
+        userData = { ...userData, companyName: "CRM Sales Management System" };
+      }
+      state.user = userData;
+      state.isAuthenticated = !!userData;
+      if (userData?.role) {
+        const rawRole = userData.role;
         state.activeRole = (rawRole === "client-admin" || rawRole === "super-admin") ? "admin" : rawRole;
       } else if (!state.activeRole) {
         state.activeRole = "team";

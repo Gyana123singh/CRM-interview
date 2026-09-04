@@ -22,7 +22,8 @@ export async function login(req, res) {
       
       if (!defaultCompany) {
         defaultCompany = await Company.create({
-          companyName: "Infotattva Business Solutions",
+          _id: "company-infotattva-id",
+          companyName: "CRM Sales Management System",
           industry: "SaaS & Retail Solutions",
           contactPerson: "Pradeep Patra",
           phone: "+91 94380 99999",
@@ -32,7 +33,7 @@ export async function login(req, res) {
           status: "active",
           routingPolicy: "round-robin",
           whatsappPhone: "+91 94380 99999",
-          whatsappName: "Infotattva Business Live Desk",
+          whatsappName: "CRM Sales Management System Live Desk",
           whatsappConnected: true,
           smtpVerified: true
         });

@@ -161,7 +161,7 @@ export async function getAISettings(req, res) {
     if (!company) return res.status(404).json({ error: "Company not found" });
 
     return res.status(200).json({
-      botPersona: company.botPersona || "You are a professional, polite, and helpful AI assistant for Infotattva Business Solutions. Answer customer queries based on the FAQs. Be friendly and collect customer contact details to pass to the sales team.",
+      botPersona: company.botPersona || "You are a professional, polite, and helpful AI assistant for CRM Sales Management System. Answer customer queries based on the FAQs. Be friendly and collect customer contact details to pass to the sales team.",
       botModel: company.botModel || "Google Gemini 1.5 Pro",
       botTemperature: company.botTemperature ?? 0.5,
       botAutoPilot: company.botAutoPilot ?? true

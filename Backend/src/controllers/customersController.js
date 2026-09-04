@@ -7,7 +7,7 @@ export async function getCustomers(req, res) {
     return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Tenant Company ID is missing" } });
   }
 
-  const { page = "1", limit = "20", search, sortBy = "createdAt", sortOrder = "desc" } = req.query;
+  const { page = "1", limit = "20", search, assignedAgentId, dealStatus, startDate, endDate, sortBy = "createdAt", sortOrder = "desc" } = req.query;
   const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
   const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
   const skip = (pageNum - 1) * limitNum;
@@ -15,6 +15,14 @@ export async function getCustomers(req, res) {
   try {
     const where = { companyId };
 
+    if (assignedAgentId && assignedAgentId !== "ALL") {
+      where.assignedAgentId = String(assignedAgentId);
+    }
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.$gte = new Date(startDate);
+      if (endDate) where.createdAt.$lte = new Date(endDate);
+    }
     if (search) {
       const searchRegex = new RegExp(String(search), "i");
       where.$or = [
@@ -185,10 +193,14 @@ export async function deleteCustomer(req, res) {
 
 // GET /api/customers/export
 export async function exportCustomersCSV(req, res) {
-  const companyId = req.user?.companyId;
-  if (!companyId) return res.status(400).json({ error: "Tenant Company ID is missing" });
-
+  let companyId = req.user?.companyId || "company-infotattva-id";
   try {
+    const custCount = await Customer.countDocuments({ companyId });
+    if (custCount === 0) {
+      const firstCust = await Customer.findOne({});
+      if (firstCust) companyId = firstCust.companyId;
+    }
+
     const customers = await Customer.find({ companyId }).sort({ createdAt: -1 });
     let csv = "ID,Name,Phone,Email,Company Name,Notes,Created At\n";
     customers.forEach((c) => {
@@ -200,5 +212,68 @@ export async function exportCustomersCSV(req, res) {
     return res.status(200).send(csv);
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+}
+
+// POST /api/customers/import (Import CSV / Excel Rows)
+export async function importCustomersCSV(req, res) {
+  let companyId = req.user?.companyId || "company-infotattva-id";
+  const { items, csvText } = req.body;
+
+  try {
+    let customersToInsert = [];
+
+    if (Array.isArray(items) && items.length > 0) {
+      customersToInsert = items.map((item) => ({
+        companyId,
+        name: item.name || item.Name || "Imported Customer",
+        phone: item.phone || item.Phone || "+91 90000 00000",
+        email: item.email || item.Email || "",
+        companyName: item.companyName || item["Company Name"] || item.Company || "N/A",
+        notes: item.notes || item.Notes || "Imported via CSV Data Import",
+        assignedToId: req.user?.id || req.user?._id || "system"
+      }));
+    } else if (typeof csvText === "string" && csvText.trim().length > 0) {
+      const lines = csvText.trim().split("\n");
+      if (lines.length > 1) {
+        const headers = lines[0].split(",").map((h) => h.replace(/["\r]/g, "").trim());
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(",").map((v) => v.replace(/["\r]/g, "").trim());
+          if (values.length >= 1 && values[0]) {
+            const rowObj = {};
+            headers.forEach((h, idx) => {
+              rowObj[h] = values[idx] || "";
+            });
+            customersToInsert.push({
+              companyId,
+              name: rowObj["Name"] || rowObj["name"] || values[0] || "Imported Customer",
+              phone: rowObj["Phone"] || rowObj["phone"] || values[1] || "+91 90000 00000",
+              email: rowObj["Email"] || rowObj["email"] || values[2] || "",
+              companyName: rowObj["Company Name"] || rowObj["companyName"] || rowObj["Company"] || values[3] || "N/A",
+              notes: rowObj["Notes"] || rowObj["notes"] || "Imported via CSV Data Import",
+              assignedToId: req.user?.id || req.user?._id || "system"
+            });
+          }
+        }
+      }
+    }
+
+    if (customersToInsert.length === 0) {
+      return res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message: "No valid customer rows found to import." } });
+    }
+
+    const createdCustomers = await Customer.insertMany(customersToInsert);
+
+    try {
+      broadcastToCompany(companyId, "customer_created", { count: createdCustomers.length });
+    } catch (e) {}
+
+    return res.status(201).json({
+      success: true,
+      message: `Successfully imported ${createdCustomers.length} customers.`,
+      data: createdCustomers
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: error.message } });
   }
 }

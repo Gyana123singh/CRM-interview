@@ -1,5 +1,5 @@
 "use client";
- 
+
 import React, { useEffect } from "react";
 import { Provider, useDispatch } from "react-redux";
 import { ThemeProvider } from "next-themes";
@@ -32,26 +32,28 @@ function AuthInitializer({ children }) {
               try {
                 const payload = JSON.parse(ev.data);
                 dispatch(addLead(payload));
-              } catch (e) {}
+              } catch (e) { }
             });
             es.addEventListener("lead_updated", (ev) => {
               try {
                 const payload = JSON.parse(ev.data);
                 dispatch(updateLeadStatus({ id: payload.id, status: payload.status }));
-              } catch (e) {}
+              } catch (e) { }
             });
             es.addEventListener("message_created", (ev) => {
               try {
                 const payload = JSON.parse(ev.data);
                 dispatch(createNewThread({ leadId: payload.leadId, name: payload.leadId, phone: "" }));
-                dispatch(addMessage({ leadId: payload.leadId, message: {
-                  id: payload.id,
-                  sender: payload.sender,
-                  text: payload.text,
-                  timestamp: payload.timestamp,
-                  channel: payload.channel || "WhatsApp"
-                }}));
-              } catch (e) {}
+                dispatch(addMessage({
+                  leadId: payload.leadId, message: {
+                    id: payload.id,
+                    sender: payload.sender,
+                    text: payload.text,
+                    timestamp: payload.timestamp,
+                    channel: payload.channel || "WhatsApp"
+                  }
+                }));
+              } catch (e) { }
             });
             es.addEventListener("billing_updated", (ev) => {
               try {
@@ -64,7 +66,7 @@ function AuthInitializer({ children }) {
                   const customEv = new CustomEvent("billingPlanUpdated", { detail: payload });
                   window.dispatchEvent(customEv);
                 }
-              } catch (err) {}
+              } catch (err) { }
             });
             // close on unload
             window.addEventListener("beforeunload", () => {

@@ -131,6 +131,7 @@ export default function ClientAdminDashboard() {
   const newLeads = stats.newLeads ?? leads.filter((l) => l.status === "New").length;
   const qualifiedLeads = leads.filter((l) => l.status === "Qualified" || l.status === "Interested").length;
   const convertedLeads = stats.convertedLeads ?? leads.filter((l) => l.status === "Converted").length;
+  const lostLeads = leads.filter((l) => l.status === "Lost" || l.status === "Unqualified").length;
   const conversionRate = stats.conversionRate ?? (totalLeads > 0 ? Math.round((convertedLeads / totalLeads) * 100) : 0);
 
   const totalCustomers = stats.totalCustomers ?? customers.length;
@@ -229,8 +230,9 @@ export default function ClientAdminDashboard() {
         </div>
       </div>
 
-      {/* Primary KPI Cards Grid */}
+      {/* Primary KPI Cards Grid (Section 6 Metrics Spec) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. Leads Metric Card */}
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Leads Summary</span>
@@ -238,13 +240,23 @@ export default function ClientAdminDashboard() {
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold text-white">{totalLeads}</span>
-            <span className="text-xs text-emerald-400 font-medium">{conversionRate}% Conv Rate</span>
+            <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">{conversionRate}% Conv Rate</span>
           </div>
-          <p className="text-xs text-slate-500">{newLeads} New | {qualifiedLeads} Qualified | {convertedLeads} Converted</p>
+          <div className="text-[11px] text-slate-400 font-medium space-y-1">
+            <div className="flex justify-between">
+              <span>New: <b className="text-slate-200">{newLeads}</b></span>
+              <span>Qualified: <b className="text-indigo-300">{qualifiedLeads}</b></span>
+            </div>
+            <div className="flex justify-between">
+              <span>Converted: <b className="text-emerald-400">{convertedLeads}</b></span>
+              <span>Lost/Unqual: <b className="text-rose-400">{lostLeads}</b></span>
+            </div>
+          </div>
         </div>
 
+        {/* 2. Customers Metric Card */}
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Customers</span>
@@ -252,37 +264,59 @@ export default function ClientAdminDashboard() {
               <Target className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold text-white">{totalCustomers}</span>
-            <span className="text-xs text-emerald-400 font-medium">+{newlyConvertedCustomers} this week</span>
+            <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">+{newlyConvertedCustomers} this week</span>
           </div>
-          <p className="text-xs text-slate-500">Converted customer accounts</p>
+          <p className="text-[11px] text-slate-400 font-medium">Total active converted customer accounts</p>
         </div>
 
+        {/* 3. Deals & Revenue Metric Card */}
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pipeline & Won</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Deals & Revenue</span>
             <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold text-amber-400">${totalPipelineValue.toLocaleString()}</span>
+            <span className="text-xs text-slate-400 font-bold">Deals: {totalDeals}</span>
           </div>
-          <p className="text-xs text-slate-500">Won Revenue: <span className="text-emerald-400 font-bold">${wonRevenue.toLocaleString()}</span> ({wonDeals} Deals)</p>
+          <div className="text-[11px] text-slate-400 font-medium space-y-1">
+            <div className="flex justify-between">
+              <span>Open: <b className="text-indigo-400">{openDeals}</b></span>
+              <span>Won: <b className="text-emerald-400">{wonDeals}</b></span>
+              <span>Lost: <b className="text-rose-400">{lostDeals}</b></span>
+            </div>
+            <div className="flex justify-between pt-0.5 border-t border-slate-800">
+              <span>Won: <b className="text-emerald-400">${wonRevenue.toLocaleString()}</b></span>
+              <span>Exp: <b className="text-purple-400">${totalExpectedRevenue.toLocaleString()}</b></span>
+            </div>
+          </div>
         </div>
 
+        {/* 4. Activities Metric Card */}
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Expected & Activities</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Activities</span>
             <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
               <Award className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-purple-400">${totalExpectedRevenue.toLocaleString()}</span>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-purple-400">{pendingActivities + completedActivities + overdueActivities}</span>
+            <span className="text-xs text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">{overdueActivities} Overdue</span>
           </div>
-          <p className="text-xs text-slate-500">Activities: {pendingActivities} Pending | <span className="text-rose-400 font-bold">{overdueActivities} Overdue</span></p>
+          <div className="text-[11px] text-slate-400 font-medium space-y-1">
+            <div className="flex justify-between">
+              <span>Pending: <b className="text-amber-400">{pendingActivities}</b></span>
+              <span>Done: <b className="text-emerald-400">{completedActivities}</b></span>
+            </div>
+            <div className="flex justify-between pt-0.5 border-t border-slate-800">
+              <span>Overdue Follow-ups: <b className="text-rose-400">{overdueActivities}</b></span>
+            </div>
+          </div>
         </div>
       </div>
 

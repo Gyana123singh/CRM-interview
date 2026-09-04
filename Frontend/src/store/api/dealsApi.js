@@ -71,6 +71,15 @@ export const dealsApi = apiSlice.injectEndpoints({
         method: "DELETE"
       }),
       invalidatesTags: [{ type: "Deal", id: "LIST" }, "Dashboard"]
+    }),
+
+    importDealsCSV: builder.mutation({
+      query: (body) => ({
+        url: "/deals/import",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: [{ type: "Deal", id: "LIST" }, "Dashboard"]
     })
   })
 });
@@ -81,5 +90,6 @@ export const {
   useCreateDealMutation,
   useUpdateDealStageMutation,
   useUpdateDealMutation,
-  useDeleteDealMutation
+  useDeleteDealMutation,
+  useImportDealsCSVMutation
 } = dealsApi;

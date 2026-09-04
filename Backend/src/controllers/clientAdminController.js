@@ -25,10 +25,20 @@ import {
   mapRuleTrigger
 } from "../utils/mappers.js";
 
+// High-Performance In-Memory Cache Store for Dashboard Analytics
+const dashboardStatsCache = new Map();
+const STATS_CACHE_TTL_MS = 5000; // 5-second TTL cache to prevent hammering MongoDB
+
 // GET /admin/dashboard/stats
 export async function getDashboardStats(req, res) {
   const companyId = req.user?.companyId;
   if (!companyId) return res.status(400).json({ error: "Tenant Company ID is missing" });
+
+  const cacheKey = String(companyId);
+  const cachedEntry = dashboardStatsCache.get(cacheKey);
+  if (cachedEntry && Date.now() - cachedEntry.timestamp < STATS_CACHE_TTL_MS) {
+    return res.status(200).json(cachedEntry.data);
+  }
 
   try {
     const [
@@ -83,7 +93,7 @@ export async function getDashboardStats(req, res) {
       .limit(3)
       .select("name serviceInterest source status createdAt");
 
-    return res.status(200).json({
+    const statsPayload = {
       totalLeads,
       newLeads,
       interestedLeads,
@@ -113,7 +123,10 @@ export async function getDashboardStats(req, res) {
         status: mapLeadStatusToFrontend(l.status),
         createdAt: l.createdAt.toISOString()
       }))
-    });
+    };
+
+    dashboardStatsCache.set(cacheKey, { timestamp: Date.now(), data: statsPayload });
+    return res.status(200).json(statsPayload);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -429,7 +442,7 @@ export async function verifyWhatsapp(req, res) {
       companyId,
       {
         whatsappPhone: phone || (isConnected === false ? null : "+91 94380 99999"),
-        whatsappName: name || (isConnected === false ? null : "Infotattva Business Live Desk"),
+        whatsappName: name || (isConnected === false ? null : "CRM Sales Management System Live Desk"),
         whatsappConnected: isConnected
       },
       { new: true }
@@ -443,7 +456,7 @@ export async function verifyWhatsapp(req, res) {
         { companyId },
         {
           phone: phone || "+91 94380 99999",
-          name: name || "Infotattva Business Live Desk",
+          name: name || "CRM Sales Management System Live Desk",
           accessToken: token,
           apiKey: phoneId,
           status: "connected"
@@ -467,8 +480,8 @@ export async function verifyWhatsapp(req, res) {
 // GET /meta-forms
 export async function getMetaForms(req, res) {
   return res.status(200).json([
-    { id: "form_01", formName: "Patia 2BHK Campaign Form", pageName: "Infotattva Real Estates", leadsSynced: 148, isActive: true },
-    { id: "form_02", formName: "AI WhatsApp Chatbot Consultation Form", pageName: "Infotattva Solutions", leadsSynced: 92, isActive: true },
+    { id: "form_01", formName: "Patia 2BHK Campaign Form", pageName: "CRM Real Estates", leadsSynced: 148, isActive: true },
+    { id: "form_02", formName: "AI WhatsApp Chatbot Consultation Form", pageName: "CRM Solutions", leadsSynced: 92, isActive: true },
     { id: "form_03", formName: "Salons Booking Retainer Form", pageName: "Elite Spas & Salons", leadsSynced: 35, isActive: false }
   ]);
 }
@@ -835,7 +848,7 @@ export async function seedDatabase(req, res) {
 
     const company = await Company.create({
       _id: "company-infotattva-id",
-      companyName: "Infotattva Business Solutions",
+      companyName: "CRM Sales Management System",
       industry: "SaaS & Retail Solutions",
       contactPerson: "Pradeep Patra",
       phone: "+91 94380 99999",
@@ -845,7 +858,7 @@ export async function seedDatabase(req, res) {
       status: "active",
       routingPolicy: "round-robin",
       whatsappPhone: "+91 94380 99999",
-      whatsappName: "Infotattva Business Live Desk",
+      whatsappName: "CRM Sales Management System Live Desk",
       whatsappConnected: true,
       smtpVerified: true,
       smtpHost: "smtp.infotattva.com",

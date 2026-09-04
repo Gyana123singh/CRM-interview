@@ -11,8 +11,12 @@ import {
   ArrowRightLeft,
   CheckCircle,
   Edit,
-  Clock
+  Clock,
+  Code,
+  Upload
 } from "lucide-react";
+import { downloadCSV } from "@/utils/exportCsv";
+import CSVImportModal from "@/components/shared/CSVImportModal";
 import {
   useGetLeadsQuery,
   useUpdateLeadStatusMutation,
@@ -24,7 +28,129 @@ import {
 import { DataTable } from "@/components/ui/DataTable";
 import { ConvertLeadModal } from "@/components/leads/ConvertLeadModal";
 import { ActivityTimelineModal } from "@/components/shared/ActivityTimelineModal";
-import { EditLeadModal } from "@/components/leads/EditLeadModal";
+import { ScriptGeneratorModal } from "@/components/leads/ScriptGeneratorModal";
+import { subscribeToRealtimeEvent } from "@/utils/socketEvents";
+
+function StatusSelectCell({ lead, onStatusChange }) {
+  const [val, setVal] = useState(lead.status || "New");
+
+  useEffect(() => {
+    setVal(lead.status || "New");
+  }, [lead.status]);
+
+  const handleChange = (e) => {
+    const nextVal = e.target.value;
+    setVal(nextVal);
+    onStatusChange(lead.id || lead._id, nextVal);
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "Converted":
+        return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25";
+      case "Lost":
+        return "bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25";
+      case "Interested":
+        return "bg-purple-500/15 text-purple-400 border-purple-500/30 hover:bg-purple-500/25";
+      case "Follow-up":
+        return "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25";
+      case "Contacted":
+        return "bg-teal-500/15 text-teal-400 border-teal-500/30 hover:bg-teal-500/25";
+      default:
+        return "bg-indigo-500/15 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/25";
+    }
+  };
+
+  return (
+    <div className="inline-flex items-center whitespace-nowrap shrink-0">
+      <select
+        value={val}
+        onChange={handleChange}
+        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer outline-none whitespace-nowrap shrink-0 ${getStatusStyle(val)}`}
+      >
+        <option value="New" className="bg-slate-900 text-slate-200">New</option>
+        <option value="Contacted" className="bg-slate-900 text-slate-200">Contacted</option>
+        <option value="Interested" className="bg-slate-900 text-slate-200">Interested</option>
+        <option value="Follow-up" className="bg-slate-900 text-slate-200">Follow-up</option>
+        <option value="Converted" className="bg-slate-900 text-slate-200">Converted</option>
+        <option value="Lost" className="bg-slate-900 text-slate-200">Lost</option>
+      </select>
+    </div>
+  );
+}
+
+function PrioritySelectCell({ lead, onPriorityChange }) {
+  const [val, setVal] = useState(lead.priority || "Medium");
+
+  useEffect(() => {
+    setVal(lead.priority || "Medium");
+  }, [lead.priority]);
+
+  const handleChange = (e) => {
+    const nextVal = e.target.value;
+    setVal(nextVal);
+    onPriorityChange(lead.id || lead._id, nextVal);
+  };
+
+  const getPriorityStyle = (priority) => {
+    switch (priority) {
+      case "Urgent":
+        return "bg-rose-500/20 text-rose-400 border-rose-500/30 hover:bg-rose-500/30";
+      case "High":
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30";
+      case "Low":
+        return "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700/80";
+      default:
+        return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/30";
+    }
+  };
+
+  return (
+    <div className="inline-flex items-center whitespace-nowrap shrink-0">
+      <select
+        value={val}
+        onChange={handleChange}
+        className={`px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer outline-none whitespace-nowrap shrink-0 ${getPriorityStyle(val)}`}
+      >
+        <option value="Low" className="bg-slate-900 text-slate-200">Low</option>
+        <option value="Medium" className="bg-slate-900 text-slate-200">Medium</option>
+        <option value="High" className="bg-slate-900 text-slate-200">High</option>
+        <option value="Urgent" className="bg-slate-900 text-slate-200">Urgent</option>
+      </select>
+    </div>
+  );
+}
+
+function AssignedRepSelectCell({ lead, agentsList, onAssignAgent }) {
+  const [val, setVal] = useState(lead.assignedToId || "");
+
+  useEffect(() => {
+    setVal(lead.assignedToId || "");
+  }, [lead.assignedToId]);
+
+  const handleChange = (e) => {
+    const nextVal = e.target.value;
+    setVal(nextVal);
+    onAssignAgent(lead.id || lead._id, nextVal);
+  };
+
+  return (
+    <div className="inline-flex items-center whitespace-nowrap shrink-0">
+      <select
+        value={val}
+        onChange={handleChange}
+        className="px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-xs font-medium text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 whitespace-nowrap shrink-0 cursor-pointer hover:border-slate-700 transition-colors"
+      >
+        <option value="" className="bg-slate-900 text-slate-400">Unassigned</option>
+        {agentsList.map((ag) => (
+          <option key={ag.id || ag._id} value={ag.id || ag._id} className="bg-slate-900 text-slate-200">
+            {ag.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export default function ClientAdminLeadsPage() {
   const [mounted, setMounted] = useState(false);
@@ -38,6 +164,7 @@ export default function ClientAdminLeadsPage() {
   const [selectedLeadForEdit, setSelectedLeadForEdit] = useState(null);
   const [selectedLeadForConvert, setSelectedLeadForConvert] = useState(null);
   const [selectedLeadForTimeline, setSelectedLeadForTimeline] = useState(null);
+  const [showScriptGeneratorModal, setShowScriptGeneratorModal] = useState(false);
 
   // Form states for manual lead creation
   const [name, setName] = useState("");
@@ -49,22 +176,29 @@ export default function ClientAdminLeadsPage() {
   const [priority, setPriority] = useState("Medium");
   const [assignedToId, setAssignedToId] = useState("");
   const [notes, setNotes] = useState("");
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  const { data, isLoading, refetch } = useGetLeadsQuery({
+    page,
+    limit: 10,
+    search: search || undefined,
+    status: statusFilter && !statusFilter.toLowerCase().includes("all") ? statusFilter : undefined,
+    source: sourceFilter && !sourceFilter.toLowerCase().includes("all") ? sourceFilter : undefined,
+    priority: priorityFilter && !priorityFilter.toLowerCase().includes("all") ? priorityFilter : undefined
+  });
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  const { data, isLoading, refetch } = useGetLeadsQuery(
-    {
-      page,
-      limit: 10,
-      search: search || undefined,
-      status: statusFilter !== "All" ? statusFilter : undefined,
-      source: sourceFilter !== "All" ? sourceFilter : undefined,
-      priority: priorityFilter !== "All" ? priorityFilter : undefined
-    },
-    { skip: !mounted }
-  );
+    refetch();
+    const unsub1 = subscribeToRealtimeEvent("lead_created", () => refetch());
+    const unsub2 = subscribeToRealtimeEvent("lead_updated", () => refetch());
+    const unsub3 = subscribeToRealtimeEvent("lead_assigned", () => refetch());
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
+  }, [refetch]);
 
   const { data: agentsData } = useGetAgentsQuery(undefined, { skip: !mounted });
   const agentsList = Array.isArray(agentsData) ? agentsData : [];
@@ -78,8 +212,9 @@ export default function ClientAdminLeadsPage() {
     try {
       await updateLeadStatus({ id, status: newStatus }).unwrap();
       toast.success("Lead status updated successfully");
+      refetch();
     } catch (err) {
-      toast.error(err?.data?.error?.message || "Failed to update status");
+      toast.error(err?.data?.error?.message || err?.data?.error || err?.data?.message || err?.message || "Failed to update status");
     }
   };
 
@@ -87,8 +222,9 @@ export default function ClientAdminLeadsPage() {
     try {
       await updateLeadPriority({ id, priority: newPriority }).unwrap();
       toast.success("Lead priority updated successfully");
+      refetch();
     } catch (err) {
-      toast.error(err?.data?.error?.message || "Failed to update priority");
+      toast.error(err?.data?.error?.message || err?.data?.error || err?.data?.message || err?.message || "Failed to update priority");
     }
   };
 
@@ -96,8 +232,9 @@ export default function ClientAdminLeadsPage() {
     try {
       await assignLead({ id, agentId: agentId || null }).unwrap();
       toast.success("Agent assigned successfully");
+      refetch();
     } catch (err) {
-      toast.error(err?.data?.error?.message || "Failed to assign agent");
+      toast.error(err?.data?.error?.message || err?.data?.error || err?.data?.message || err?.message || "Failed to assign agent");
     }
   };
 
@@ -163,87 +300,22 @@ export default function ClientAdminLeadsPage() {
     {
       header: "Source",
       cell: (lead) => (
-        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap inline-block shrink-0">
           {lead.source}
         </span>
       )
     },
     {
       header: "Priority",
-      cell: (lead) => (
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              lead.priority === "Urgent"
-                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                : lead.priority === "High"
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                : lead.priority === "Low"
-                ? "bg-slate-800 text-slate-400 border border-slate-700"
-                : "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-            }`}
-          >
-            {lead.priority || "Medium"}
-          </span>
-          <select
-            value={lead.priority || "Medium"}
-            onChange={(e) => handlePriorityChange(lead.id, e.target.value)}
-            className="px-1.5 py-0.5 bg-slate-950 border border-slate-800 rounded text-[11px] font-medium text-slate-300 focus:outline-none"
-          >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Urgent">Urgent</option>
-          </select>
-        </div>
-      )
+      cell: (lead) => <PrioritySelectCell lead={lead} onPriorityChange={handlePriorityChange} />
     },
     {
       header: "Assigned Rep",
-      cell: (lead) => (
-        <select
-          value={lead.assignedToId || ""}
-          onChange={(e) => handleAssignAgent(lead.id, e.target.value)}
-          className="px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-        >
-          <option value="">Unassigned</option>
-          {agentsList.map((ag) => (
-            <option key={ag.id} value={ag.id}>
-              {ag.name}
-            </option>
-          ))}
-        </select>
-      )
+      cell: (lead) => <AssignedRepSelectCell lead={lead} agentsList={agentsList} onAssignAgent={handleAssignAgent} />
     },
     {
       header: "Status",
-      cell: (lead) => (
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-              lead.status === "Converted"
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                : lead.status === "Lost"
-                ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
-            }`}
-          >
-            {lead.status}
-          </span>
-          <select
-            value={lead.status}
-            onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-            className="px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-          >
-            <option value="New">New</option>
-            <option value="Contacted">Contacted</option>
-            <option value="Interested">Interested</option>
-            <option value="Follow-up">Follow-up</option>
-            <option value="Converted">Converted</option>
-            <option value="Lost">Lost</option>
-          </select>
-        </div>
-      )
+      cell: (lead) => <StatusSelectCell lead={lead} onStatusChange={handleStatusChange} />
     },
     {
       header: "Actions",
@@ -299,15 +371,31 @@ export default function ClientAdminLeadsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/leads/export`}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => setShowScriptGeneratorModal(true)}
+              className="inline-flex items-center justify-center gap-2 h-10 px-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 transition-all whitespace-nowrap shrink-0"
+              title="Generate Embed Scripts for HTML, JavaScript, React, Angular, Vue, Webflow, WordPress"
+            >
+              <Code className="h-4 w-4 shrink-0 text-emerald-200" />
+              <span className="whitespace-nowrap">⚡ Ingestion Script Generator</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 h-10 px-3.5 border border-indigo-500/30 bg-indigo-500/10 rounded-xl text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 transition whitespace-nowrap shrink-0"
+            >
+              <Upload className="h-4 w-4 shrink-0 text-indigo-400" />
+              <span className="whitespace-nowrap">Import CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCSV("/leads/export", "leads_export.csv")}
               className="inline-flex items-center justify-center gap-1.5 h-10 px-3.5 border border-slate-800 bg-slate-900/80 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition whitespace-nowrap shrink-0"
             >
               <Download className="h-4 w-4 shrink-0 text-slate-400" />
               <span className="whitespace-nowrap">Export CSV</span>
-            </a>
+            </button>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
@@ -427,6 +515,14 @@ export default function ClientAdminLeadsPage() {
             title={`Lead: ${selectedLeadForTimeline.name}`}
             isOpen={!!selectedLeadForTimeline}
             onClose={() => setSelectedLeadForTimeline(null)}
+          />
+        )}
+
+        {/* Script Generator Modal */}
+        {showScriptGeneratorModal && (
+          <ScriptGeneratorModal
+            isOpen={showScriptGeneratorModal}
+            onClose={() => setShowScriptGeneratorModal(false)}
           />
         )}
 
@@ -575,6 +671,13 @@ export default function ClientAdminLeadsPage() {
             </div>
           </div>
         )}
+        {/* CSV Import Modal */}
+        <CSVImportModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          entityType="Lead"
+          onSuccess={() => refetch()}
+        />
       </div>
     </DashboardWrapper>
   );

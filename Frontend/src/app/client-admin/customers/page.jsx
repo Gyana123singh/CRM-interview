@@ -3,20 +3,23 @@
 import React, { useState, useEffect } from "react";
 import DashboardWrapper from "@/components/shared/DashboardWrapper";
 import { toast } from "react-toastify";
-import { Users, Plus, Download, Sparkles, Building, Mail, Phone } from "lucide-react";
+import { Users, Plus, Download, Sparkles, Building, Mail, Phone, Upload } from "lucide-react";
 import { useGetCustomersQuery } from "@/store/api/customersApi";
 import { DataTable } from "@/components/ui/DataTable";
+import { downloadCSV } from "@/utils/exportCsv";
+import CSVImportModal from "@/components/shared/CSVImportModal";
 
 export default function CustomersPage() {
   const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const { data, isLoading } = useGetCustomersQuery(
+  const { data, isLoading, refetch } = useGetCustomersQuery(
     { page, limit: 10, search: search || undefined },
     { skip: !mounted }
   );
@@ -94,14 +97,20 @@ export default function CustomersPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/customers/export`}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 border border-indigo-500/30 bg-indigo-500/10 rounded-xl text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 transition"
+            >
+              <Upload className="h-4 w-4 text-indigo-400" /> Import CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCSV("/customers/export", "customers_export.csv")}
               className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
             >
-              <Download className="h-4 w-4" /> Export CSV
-            </a>
+              <Download className="h-4 w-4 text-slate-400" /> Export CSV
+            </button>
           </div>
         </div>
 
@@ -118,6 +127,13 @@ export default function CustomersPage() {
           }}
           searchPlaceholder="Search customers by name, company, email..."
           emptyMessage="No customer accounts found."
+        />
+
+        <CSVImportModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          entityType="Customer"
+          onSuccess={() => refetch()}
         />
       </div>
     </DashboardWrapper>

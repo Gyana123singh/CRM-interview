@@ -560,49 +560,7 @@ export default function TeamDashboard() {
             </form>
           </div>
 
-          {/* Bookings/Appointments Panel */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3">
-              <h3 className="text-sm font-black uppercase text-slate-900 dark:text-slate-50 tracking-wide flex items-center gap-1.5">
-                Today's Bookings <Calendar className="h-4.5 w-4.5 text-indigo-550" />
-              </h3>
-              <Link href="/admin/appointments" className="text-[10px] text-indigo-550 dark:text-indigo-400 hover:underline font-bold">
-                View Calendar
-              </Link>
-            </div>
 
-            <div className="space-y-3.5">
-              {[
-                { name: "Dr. Sunita Rao", time: "11:30 AM", type: "Clinic Bot Session", status: "confirmed" },
-                { name: "Rahul Mohanty", time: "02:00 PM", type: "Patia Flat Site Viewing", status: "pending" }
-              ].map((apt, index) => (
-                <div key={index} className="p-3 bg-slate-500/5 border border-slate-200/40 dark:border-slate-800/80 rounded-2xl text-xs space-y-1.5">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-0.5">
-                      <p className="font-extrabold text-slate-850 dark:text-slate-100">{apt.name}</p>
-                      <p className="text-[9px] text-indigo-500 font-extrabold uppercase">{apt.type}</p>
-                    </div>
-                    <span className={`px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${apt.status === "confirmed"
-                        ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600"
-                        : "bg-amber-100 dark:bg-amber-950/40 text-amber-600"
-                      }`}>
-                      {apt.status}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400 font-semibold border-t border-slate-100 dark:border-slate-800/60">
-                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-slate-450" /> {apt.time}</span>
-                    <button
-                      onClick={() => toast.success(`Confirmed WhatsApp notification dispatched to ${apt.name}!`)}
-                      className="text-[9px] text-indigo-600 hover:text-indigo-400 font-bold bg-indigo-500/5 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-500/10"
-                    >
-                      Remind
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* Quick Info Box */}
           <div className="bg-slate-900 border border-slate-800 text-slate-300 p-5 rounded-3xl space-y-2.5 relative overflow-hidden">

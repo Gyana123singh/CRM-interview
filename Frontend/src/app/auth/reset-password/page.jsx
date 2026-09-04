@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
             Reset Password
           </h1>
           <p className="text-xs text-slate-400">
-            Set up your new high-security password for Infotattva CRM.
+            Set up your new high-security password for CRM Sales Management System.
           </p>
         </div>
 
