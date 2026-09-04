@@ -168,7 +168,6 @@ export default function LeadsPage() {
   const [selectedLeadForConvert, setSelectedLeadForConvert] = useState(null);
   const [selectedLeadForTimeline, setSelectedLeadForTimeline] = useState(null);
   const [showScriptGeneratorModal, setShowScriptGeneratorModal] = useState(false);
-  const [showSimulatorModal, setShowSimulatorModal] = useState(false);
 
   // Form states for manual lead creation
   const [name, setName] = useState("");
@@ -277,73 +276,6 @@ export default function LeadsPage() {
     }
   };
 
-  // Instant Lead Generation Simulator for all 5 channels
-  const handleSimulateLead = async (simulatedChannel) => {
-    const channelData = {
-      Website: {
-        name: "Aarav Sharma (Web)",
-        phone: "+91 98765 11111",
-        email: "aarav.web@example.com",
-        location: "Bengaluru",
-        serviceInterest: "SaaS Enterprise Tier",
-        source: "Website",
-        priority: "High",
-        notes: "Inbound website contact form submission."
-      },
-      Referral: {
-        name: "Meera Nair (Referral)",
-        phone: "+91 98765 22222",
-        email: "meera.ref@example.com",
-        location: "Mumbai",
-        serviceInterest: "CRM Automation Upgrade",
-        source: "Referral",
-        priority: "Urgent",
-        notes: "Referred by existing VIP Client Dr. Sunita Rao."
-      },
-      "Social Media": {
-        name: "Karan Johar (Meta Ads)",
-        phone: "+91 98765 33333",
-        email: "karan.social@example.com",
-        location: "Delhi NCR",
-        serviceInterest: "WhatsApp AI Bot Setup",
-        source: "Social Media",
-        priority: "Medium",
-        notes: "Captured via Instagram Lead Ad Campaign."
-      },
-      Email: {
-        name: "Pooja Hegde (Email Inbound)",
-        phone: "+91 98765 44444",
-        email: "pooja.inbound@company.org",
-        location: "Hyderabad",
-        serviceInterest: "Sales Desk Multi-Agent Routing",
-        source: "Email",
-        priority: "High",
-        notes: "Received via sales@infotattva.com inbox."
-      },
-      Phone: {
-        name: "Rohan Verma (Call Desk)",
-        phone: "+91 98765 55555",
-        email: "rohan.call@example.com",
-        location: "Kolkata",
-        serviceInterest: "Custom API Integration",
-        source: "Phone",
-        priority: "Medium",
-        notes: "Inbound call logged by Sales Executive."
-      }
-    };
-
-    const target = channelData[simulatedChannel];
-    if (!target) return;
-
-    try {
-      await createLead(target).unwrap();
-      toast.success(`⚡ Simulated Lead "${target.name}" generated from [${simulatedChannel}]!`);
-      setShowSimulatorModal(false);
-      refetch();
-    } catch (err) {
-      toast.error("Simulation failed: " + (err?.data?.error?.message || err.message));
-    }
-  };
 
   const leadsList = data?.data?.items || [];
   const pagination = data?.data?.pagination;
@@ -466,15 +398,6 @@ export default function LeadsPage() {
               <span className="whitespace-nowrap">⚡ Ingestion Script Generator</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setShowSimulatorModal(true)}
-              className="inline-flex items-center justify-center gap-2 h-10 px-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-600/20 transition-all whitespace-nowrap shrink-0"
-              title="Test Lead Generation across 5 Channels"
-            >
-              <Sparkles className="h-4 w-4 shrink-0 text-purple-200" />
-              <span className="whitespace-nowrap">Simulate Inbound Lead</span>
-            </button>
 
             <button
               type="button"
@@ -623,46 +546,6 @@ export default function LeadsPage() {
           />
         )}
 
-        {/* Inbound Simulator Modal */}
-        {showSimulatorModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-slate-100 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  Simulate Inbound Lead <Sparkles className="w-4 h-4 text-purple-400" />
-                </h3>
-                <button
-                  onClick={() => setShowSimulatorModal(false)}
-                  className="p-1 text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-xs text-slate-400">
-                Trigger real-time webhook simulations across any of the 5 channels to test ingestion and automated routing.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {[
-                  { key: "Website", label: "Website Contact Form", color: "from-blue-600 to-indigo-600" },
-                  { key: "Referral", label: "Client Referral Track", color: "from-emerald-600 to-teal-600" },
-                  { key: "Social Media", label: "Meta / IG Lead Ads", color: "from-purple-600 to-pink-600" },
-                  { key: "Email", label: "Inbound Email Parser", color: "from-amber-600 to-orange-600" },
-                  { key: "Phone", label: "Voice IVR / Call Desk", color: "from-cyan-600 to-blue-600" }
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => handleSimulateLead(item.key)}
-                    className={`flex items-center justify-between p-3 rounded-xl bg-gradient-to-r ${item.color} text-white font-bold text-xs shadow-md transition hover:scale-[1.02]`}
-                  >
-                    <span>⚡ {item.label}</span>
-                    <span className="text-[10px] bg-black/20 px-2 py-0.5 rounded-full">Test</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Add Lead Modal */}
         {showAddModal && (
