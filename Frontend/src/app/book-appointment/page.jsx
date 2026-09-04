@@ -57,7 +57,7 @@ function BookingForm() {
       } catch (err) {
         console.error("Failed to load booking metadata:", err);
         toast.error("Could not fetch calendar configurations");
-      } font-bold {
+      } finally {
         setLoadingMeta(false);
       }
     };
