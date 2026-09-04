@@ -48,6 +48,11 @@ The application is deployed live on a **Hostinger VPS (Virtual Private Server)**
 - **API Specification**: Swagger UI (`swagger-ui-express`) and OpenAPI 3.0 specs exposed at `/api-docs`
 - **Testing Engine**: Vitest & Supertest unit/integration test suite
 
+### 🔄 CI/CD & DevOps Automation
+- **Pipeline Provider**: GitHub Actions (`.github/workflows/deploy.yml`)
+- **Automated Build & Verify**: Triggers automatically on `push` to `master` branch. Installs dependencies (`Backend` & `Frontend`), runs type & syntax checks, and validates Next.js production bundle compilation.
+- **Automated Hostinger VPS Deployment**: Connects via encrypted SSH (`appleboy/ssh-action@v1.2.2`), performs code sync (`git reset --hard origin/master`), builds static assets, manages PM2 daemon processes (`crm-backend` & `crm-frontend`), and runs health checks.
+
 ---
 
 ## 🏛️ System Architecture & Data Flow
