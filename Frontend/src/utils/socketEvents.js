@@ -2,6 +2,7 @@
 
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
+import { getSocketUrl, getApiUrl } from "./config";
 import { leadsApi } from "@/store/api/leadsApi";
 import { dealsApi } from "@/store/api/dealsApi";
 import { customersApi } from "@/store/api/customersApi";
@@ -48,7 +49,7 @@ export function notifyRealtimeSubscribers(eventName, payload) {
 export function initRealtimeSocketListener(companyId, dispatch) {
   if (typeof window === "undefined" || !companyId) return null;
 
-  const serverUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+  const serverUrl = getSocketUrl();
 
   try {
     // 1. Connect Socket.IO client
@@ -108,7 +109,7 @@ export function initRealtimeSocketListener(companyId, dispatch) {
     }
 
     // 2. SSE Fallback
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const backendUrl = getApiUrl();
     const eventSource = new EventSource(`${backendUrl}/events?companyId=${companyId}`);
 
     eventSource.addEventListener("notification_created", (e) => {

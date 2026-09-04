@@ -19,11 +19,12 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import axiosInstance from "@/utils/api";
+import { getApiUrl } from "@/utils/config";
 
 export function ScriptGeneratorModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("website"); // website, referral, social, email, phone
   const [companyId, setCompanyId] = useState("comp_01");
-  const [endpointUrl, setEndpointUrl] = useState("http://localhost:5000/api/leads/create");
+  const [endpointUrl, setEndpointUrl] = useState(`${getApiUrl()}/leads/create`);
   const [theme, setTheme] = useState("dark"); // dark, light, gradient
   const [copied, setCopied] = useState(false);
   const [isTesting, setIsTesting] = useState(false);

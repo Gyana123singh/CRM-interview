@@ -66,7 +66,7 @@ export default function SandboxCheckoutPage() {
         },
       };
 
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, "") : "http://localhost:5000");
       await axios.post(`${backendUrl}/api/webhooks/stripe`, webhookPayload);
 
       setPaymentSuccess(true);

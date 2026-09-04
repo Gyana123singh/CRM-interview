@@ -4,6 +4,7 @@ import React, { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Send, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import axios from "axios";
+import { getApiUrl } from "@/utils/config";
 
 // Helper component that consumes search params
 function EmbedFormContent() {
@@ -38,8 +39,7 @@ function EmbedFormContent() {
     setError("");
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      await axios.post(`${apiUrl}/api/leads/create`, {
+      await axios.post(`${getApiUrl()}/leads/create`, {
         companyId,
         name,
         phone,

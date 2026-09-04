@@ -1,16 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const getBaseUrl = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-  }
-  return "http://localhost:5000/api";
-};
+import { getApiUrl } from "@/utils/config";
 
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: getBaseUrl(),
+    baseUrl: getApiUrl(),
     prepareHeaders: (headers) => {
       let token = null;
       if (typeof window !== "undefined") {

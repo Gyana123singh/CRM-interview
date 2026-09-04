@@ -1,9 +1,10 @@
 import axios from "axios";
+import { getBackendUrl, getApiUrl } from "./config";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+export const API_URL = getApiUrl();
 
 export const axiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: getBackendUrl(),
   headers: {
     "Content-Type": "application/json",
   },
@@ -17,6 +18,9 @@ axiosInstance.interceptors.request.use(
       if (token) {
         config.headers.set("Authorization", `Bearer ${token}`);
       }
+    }
+    if (config.url && !config.url.startsWith("/api") && !config.url.startsWith("http")) {
+      config.url = `/api${config.url.startsWith("/") ? "" : "/"}${config.url}`;
     }
     return config;
   },

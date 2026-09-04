@@ -19,11 +19,38 @@ export const store = configureStore({
     getDefaultMiddleware().concat(apiSlice.middleware),
 });
 
+// Auth Slice Exports
 export * from "./slices/authSlice";
-export * from "./slices/leadSlice";
+
+// Lead Slice Exports (Explicit exports to prevent name collisions with ticketSlice)
+export {
+  setLeads,
+  addLead,
+  updateLeadStatus,
+  updateLeadNotes,
+  updateLeadFollowUp,
+  setSelectedLeadId,
+} from "./slices/leadSlice";
+
+// Chat Slice Exports
 export * from "./slices/chatSlice";
+
+// Automation Slice Exports
 export * from "./slices/automationSlice";
-export * from "./slices/ticketSlice";
+
+// Ticket Slice Exports (Explicit exports to prevent name collisions with leadSlice)
+export {
+  addTicket,
+  updateTicketStatus,
+  updateTicketPriority,
+  assignTicket,
+  addTicketMessage,
+  setFilterPriority as setTicketFilterPriority,
+  setFilterCategory as setTicketFilterCategory,
+  setSelectedTicketId,
+} from "./slices/ticketSlice";
+
+// API Slice Exports
 export * from "./api/leadsApi";
 export * from "./api/dealsApi";
 export * from "./api/customersApi";
