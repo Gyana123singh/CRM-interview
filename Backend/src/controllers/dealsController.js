@@ -200,6 +200,19 @@ export async function createDeal(req, res) {
         });
         emitNotificationCreated(companyId, created.assignedAgentId, notif);
       }
+
+      if (stageUpper === "WON" || stageUpper === "LOST") {
+        const notif = await Notification.create({
+          companyId,
+          userId: created.assignedAgentId || req.user?.id,
+          type: "DEAL_CLOSED",
+          title: `Deal ${stageUpper}: "${created.title}"`,
+          message: `Deal "${created.title}" was created as ${stageUpper} ($${created.dealValue.toLocaleString()})`,
+          link: "/admin/deals"
+        });
+        emitNotificationCreated(companyId, created.assignedAgentId || req.user?.id, notif);
+      }
+
       broadcastToCompany(companyId, "deal_created", created);
     } catch (e) {}
 
@@ -293,15 +306,22 @@ export async function updateDealStage(req, res) {
       emitDealEvent(companyId, "deal_stage_changed", updatedDeal);
 
       if (nextStageUpper === "WON" || nextStageUpper === "LOST") {
-        const notif = await Notification.create({
-          companyId,
-          userId: updatedDeal.assignedAgentId || req.user?.id,
-          type: "DEAL_CLOSED",
-          title: `Deal ${nextStageUpper}: "${updatedDeal.title}"`,
-          message: `Deal "${updatedDeal.title}" was marked as ${nextStageUpper} ($${updatedDeal.dealValue.toLocaleString()})`,
-          link: "/admin/deals"
-        });
-        emitNotificationCreated(companyId, updatedDeal.assignedAgentId || req.user?.id, notif);
+        const adminUsers = await User.find({ companyId, role: { $in: ["admin", "client-admin", "sales-manager", "super-admin"] } });
+        const targetIds = new Set(adminUsers.map(u => String(u._id)));
+        if (updatedDeal.assignedAgentId) targetIds.add(String(updatedDeal.assignedAgentId));
+        if (req.user?.id) targetIds.add(String(req.user.id));
+
+        for (const targetId of targetIds) {
+          const notif = await Notification.create({
+            companyId,
+            userId: targetId,
+            type: "DEAL_CLOSED",
+            title: `Deal ${nextStageUpper}: "${updatedDeal.title}"`,
+            message: `Deal "${updatedDeal.title}" was marked as ${nextStageUpper} ($${updatedDeal.dealValue.toLocaleString()})`,
+            link: "/admin/deals"
+          });
+          emitNotificationCreated(companyId, targetId, notif);
+        }
       }
     } catch (e) {}
 
@@ -347,6 +367,20 @@ export async function updateDeal(req, res) {
       },
       { new: true }
     );
+
+    if (assignedAgentId && String(assignedAgentId) !== String(existing.assignedAgentId) && companyId) {
+      try {
+        const notif = await Notification.create({
+          companyId,
+          userId: assignedAgentId,
+          type: "DEAL_ASSIGNED",
+          title: "💼 Deal Reassigned to You",
+          message: `You have been assigned to deal "${updated.title}" ($${updated.dealValue.toLocaleString()})`,
+          link: "/admin/deals"
+        });
+        emitNotificationCreated(companyId, assignedAgentId, notif);
+      } catch (nErr) {}
+    }
 
     return res.status(200).json({ success: true, data: updated });
   } catch (error) {

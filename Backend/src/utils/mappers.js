@@ -61,13 +61,15 @@ export function mapLeadStatus(statusStr) {
 // ==========================================
 
 export function mapLeadSourceToFrontend(source) {
-  if (!source) return "Website Forms";
+  if (!source) return "Website Form";
   const s = String(source).toUpperCase();
   switch (s) {
     case "WEBSITE":
     case "WEBSITE_FORMS":
     case "WEBSITE FORMS":
-      return "Website Forms";
+    case "WEBSITE_FORM":
+    case "WEBSITE FORM":
+      return "Website Form";
     case "LANDING_PAGES":
     case "LANDING PAGES":
       return "Landing Pages";
@@ -80,14 +82,22 @@ export function mapLeadSourceToFrontend(source) {
     case "WHATSAPP":
       return "WhatsApp";
     case "REFERRAL":
-      return "Referral";
+    case "REFERRAL_LINK":
+    case "REFERRAL LINK":
+      return "Referral Link";
     case "SOCIAL_MEDIA":
     case "SOCIAL MEDIA":
       return "Social Media";
     case "EMAIL":
-      return "Email";
+    case "EMAIL_PARSE":
+    case "EMAIL PARSE":
+      return "Email Parse";
     case "PHONE":
-      return "Phone";
+    case "PHONE_IVR":
+    case "PHONE / IVR":
+    case "PHONE/IVR":
+    case "IVR":
+      return "Phone / IVR";
     case "MANUAL_ENTRY":
     case "MANUAL ENTRY":
       return "Manual Entry";
@@ -97,13 +107,15 @@ export function mapLeadSourceToFrontend(source) {
 }
 
 export function mapLeadSource(sourceStr) {
-  if (!sourceStr) return "Website Forms";
+  if (!sourceStr) return "Website Form";
   const s = String(sourceStr).toUpperCase();
   switch (s) {
     case "WEBSITE":
     case "WEBSITE FORMS":
     case "WEBSITE_FORMS":
-      return "Website Forms";
+    case "WEBSITE FORM":
+    case "WEBSITE_FORM":
+      return "Website Form";
     case "LANDING PAGES":
     case "LANDING_PAGES":
       return "Landing Pages";
@@ -116,14 +128,22 @@ export function mapLeadSource(sourceStr) {
     case "WHATSAPP":
       return "WhatsApp";
     case "REFERRAL":
-      return "Referral";
+    case "REFERRAL LINK":
+    case "REFERRAL_LINK":
+      return "Referral Link";
     case "SOCIAL MEDIA":
     case "SOCIAL_MEDIA":
       return "Social Media";
     case "EMAIL":
-      return "Email";
+    case "EMAIL PARSE":
+    case "EMAIL_PARSE":
+      return "Email Parse";
     case "PHONE":
-      return "Phone";
+    case "PHONE / IVR":
+    case "PHONE/IVR":
+    case "PHONE_IVR":
+    case "IVR":
+      return "Phone / IVR";
     case "MANUAL ENTRY":
     case "MANUAL_ENTRY":
       return "Manual Entry";

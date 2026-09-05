@@ -169,6 +169,7 @@ export async function createLead(req, res) {
     });
 
     try {
+      const formattedSource = mapLeadSourceToFrontend(lead.source);
       broadcastToCompany(companyId, "lead_created", {
         id: lead._id,
         name: lead.name,
@@ -177,12 +178,41 @@ export async function createLead(req, res) {
         location: lead.location || "N/A",
         serviceInterest: lead.serviceInterest,
         message: lead.message || "",
-        source: mapLeadSourceToFrontend(lead.source),
+        source: formattedSource,
         status: mapLeadStatusToFrontend(lead.status),
         assignedTo: lead.assignedToId || "Unassigned",
         notes: lead.notes || "",
         createdAt: lead.createdAt.toISOString()
       });
+      emitLeadEvent(companyId, "lead_created", lead);
+
+      const adminUsers = await User.find({ companyId, role: { $in: ["admin", "client-admin", "sales-manager", "super-admin"] } });
+      const notifiedIds = new Set();
+
+      for (const adminUser of adminUsers) {
+        notifiedIds.add(String(adminUser._id));
+        const notif = await Notification.create({
+          companyId,
+          userId: adminUser._id,
+          type: "LEAD_CREATED",
+          title: `⚡ New ${formattedSource} Lead Captured`,
+          message: `Inbound lead "${lead.name}" (${lead.phone}) captured via ${formattedSource} for "${lead.serviceInterest}"`,
+          link: "/admin/leads"
+        });
+        emitNotificationCreated(companyId, adminUser._id, notif);
+      }
+
+      if (assignedToId && !notifiedIds.has(String(assignedToId))) {
+        const agentNotif = await Notification.create({
+          companyId,
+          userId: assignedToId,
+          type: "LEAD_ASSIGNED",
+          title: "⚡ New Lead Assigned",
+          message: `Lead "${lead.name}" (${lead.phone}) has been assigned to you.`,
+          link: "/admin/leads"
+        });
+        emitNotificationCreated(companyId, assignedToId, agentNotif);
+      }
     } catch (err) { }
 
     await ChatThread.create({
@@ -271,20 +301,24 @@ export async function captureLead(req, res) {
     }
 
     try {
-      const adminUser = await User.findOne({ companyId, role: { $in: ["admin", "client-admin", "sales-manager"] } });
-      if (adminUser) {
+      const adminUsers = await User.find({ companyId, role: { $in: ["admin", "client-admin", "sales-manager", "super-admin"] } });
+      const notifiedIds = new Set();
+      const formattedSource = mapLeadSourceToFrontend(lead.source);
+
+      for (const adminUser of adminUsers) {
+        notifiedIds.add(String(adminUser._id));
         const notif = await Notification.create({
           companyId,
           userId: adminUser._id,
           type: "LEAD_CREATED",
-          title: `⚡ New ${lead.source || "Website"} Lead Captured`,
-          message: `Inbound lead "${lead.name}" (${lead.phone}) captured for "${lead.serviceInterest}"`,
+          title: `⚡ New ${formattedSource} Lead Captured`,
+          message: `Inbound lead "${lead.name}" (${lead.phone}) captured via ${formattedSource} for "${lead.serviceInterest}"`,
           link: "/admin/leads"
         });
         emitNotificationCreated(companyId, adminUser._id, notif);
       }
 
-      if (assignedAgentId && (!adminUser || String(adminUser._id) !== String(assignedAgentId))) {
+      if (assignedAgentId && !notifiedIds.has(String(assignedAgentId))) {
         const agentNotif = await Notification.create({
           companyId,
           userId: assignedAgentId,
@@ -295,7 +329,9 @@ export async function captureLead(req, res) {
         });
         emitNotificationCreated(companyId, assignedAgentId, agentNotif);
       }
-    } catch (nErr) { }
+    } catch (nErr) {
+      console.error("[Capture Lead Notification Error]", nErr);
+    }
 
     await AuditLog.create({
       category: "AI Engine",
@@ -469,6 +505,24 @@ export async function updateLeadFollowUp(req, res) {
 
     lead.followUpDate = date ? new Date(date) : null;
     await lead.save();
+
+    const companyId = lead.companyId || req.user?.companyId;
+    if (lead.followUpDate && companyId) {
+      try {
+        const targetUser = lead.assignedToId || req.user?.id;
+        if (targetUser) {
+          const notif = await Notification.create({
+            companyId,
+            userId: targetUser,
+            type: "UPCOMING_FOLLOWUP",
+            title: "⏰ Lead Follow-up Scheduled",
+            message: `Follow-up for lead "${lead.name}" set for ${new Date(lead.followUpDate).toLocaleDateString()}`,
+            link: "/admin/leads"
+          });
+          emitNotificationCreated(companyId, targetUser, notif);
+        }
+      } catch (fErr) { }
+    }
 
     return res.status(200).json({
       success: true,
@@ -664,16 +718,20 @@ export async function convertLead(req, res) {
 
     try {
       const notifTargetUser = lead.assignedToId || req.user?.id;
-      if (notifTargetUser && companyId) {
+      const adminUsers = await User.find({ companyId, role: { $in: ["admin", "client-admin", "sales-manager", "super-admin"] } });
+      const targetUserIds = new Set(adminUsers.map(u => String(u._id)));
+      if (notifTargetUser) targetUserIds.add(String(notifTargetUser));
+
+      for (const targetId of targetUserIds) {
         const notif = await Notification.create({
           companyId,
-          userId: notifTargetUser,
+          userId: targetId,
           type: "LEAD_CONVERTED",
           title: "🎉 Lead Converted to Customer",
           message: `Lead "${lead.name}" was converted to Customer "${customer.name}" and Deal "${deal.title}" ($${deal.dealValue.toLocaleString()})`,
           link: "/admin/deals"
         });
-        emitNotificationCreated(companyId, notifTargetUser, notif);
+        emitNotificationCreated(companyId, targetId, notif);
       }
       broadcastToCompany(companyId, "lead_converted", result);
     } catch (e) { }

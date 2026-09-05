@@ -6,6 +6,7 @@ import router from "./routes/api.js";
 import { setupSwagger } from "./config/swagger.js";
 import { connectDB } from "./config/db.js";
 import { initSocketIO } from "./services/socketEvents.js";
+import { initFollowUpScheduler } from "./services/followUpScheduler.js";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use((err, req, res, next) => {
 initSocketIO(server);
 
 connectDB().then(() => {
+  initFollowUpScheduler();
   server.listen(PORT, () => {
     console.log(`CRM backend with Socket.IO running on http://localhost:${PORT}`);
   });

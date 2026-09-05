@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema(
     userId: { type: String, ref: "User", required: true, index: true },
     type: {
       type: String,
-      enum: ["LEAD_ASSIGNED", "DEAL_ASSIGNED", "UPCOMING_FOLLOWUP", "OVERDUE_FOLLOWUP", "LEAD_CONVERTED", "DEAL_CLOSED", "SYSTEM"],
+      enum: ["LEAD_CREATED", "LEAD_ASSIGNED", "DEAL_ASSIGNED", "UPCOMING_FOLLOWUP", "OVERDUE_FOLLOWUP", "LEAD_CONVERTED", "DEAL_CLOSED", "SYSTEM"],
       required: true
     },
     title: { type: String, required: true },
